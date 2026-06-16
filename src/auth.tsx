@@ -20,7 +20,6 @@ type AuthValue = {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name?: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -32,7 +31,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signInMut = useMutation(api.auth.signIn);
-  const signUpMut = useMutation(api.auth.signUp);
   const signOutMut = useMutation(api.auth.signOut);
 
   // Resolve the user for the current token (skips the query when signed out).
@@ -59,14 +57,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [signInMut, persist],
   );
 
-  const signUp = useCallback(
-    async (email: string, password: string, name?: string) => {
-      const { token: t } = await signUpMut({ email, password, name });
-      persist(t);
-    },
-    [signUpMut, persist],
-  );
-
   const signOut = useCallback(async () => {
     if (token) {
       try {
@@ -85,10 +75,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: me ?? null,
       loading: token !== null && me === undefined,
       signIn,
-      signUp,
       signOut,
     }),
-    [token, me, signIn, signUp, signOut],
+    [token, me, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

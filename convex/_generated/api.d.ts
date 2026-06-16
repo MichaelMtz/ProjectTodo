@@ -9,6 +9,7 @@
  */
 
 import type * as activity from "../activity.js";
+import type * as attachments from "../attachments.js";
 import type * as auth from "../auth.js";
 import type * as checklist from "../checklist.js";
 import type * as comments from "../comments.js";
@@ -24,6 +25,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   activity: typeof activity;
+  attachments: typeof attachments;
   auth: typeof auth;
   checklist: typeof checklist;
   comments: typeof comments;

@@ -247,6 +247,14 @@ export const remove = mutation({
         await ctx.db.delete(row._id);
       }
     }
+    const attachments = await ctx.db
+      .query("attachments")
+      .withIndex("by_todo", (q) => q.eq("todoId", args.todoId))
+      .collect();
+    for (const a of attachments) {
+      await ctx.storage.delete(a.storageId);
+      await ctx.db.delete(a._id);
+    }
     await ctx.db.delete(args.todoId);
     return null;
   },

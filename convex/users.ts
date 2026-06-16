@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { requireUser } from "./auth";
 import { roleValidator } from "./schema";
@@ -14,6 +14,43 @@ async function hashPassword(password: string, salt: string): Promise<string> {
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
+
+// ---------------------------------------------------------------------------
+// One-time bootstrap of the first developer account.
+//
+// Internal (not in the public API) — only callable with the deploy/admin key
+// via `convex run`. It refuses to do anything once any user exists, so it can
+// only ever seed an empty database. Use this to create the initial login on a
+// fresh deployment, then create everyone else in-app and change this password.
+// ---------------------------------------------------------------------------
+export const bootstrapAdmin = internalMutation({
+  args: { email: v.string(), password: v.string(), name: v.optional(v.string()) },
+  returns: v.id("users"),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db.query("users").first();
+    if (existing) {
+      throw new ConvexError(
+        "Bootstrap refused: a user already exists. Create further users in-app.",
+      );
+    }
+    const email = normalizeEmail(args.email);
+    if (!email.includes("@")) {
+      throw new ConvexError("Please provide a valid email address.");
+    }
+    if (args.password.length < 8) {
+      throw new ConvexError("Bootstrap password must be at least 8 characters.");
+    }
+    const salt = crypto.randomUUID();
+    const passwordHash = await hashPassword(args.password, salt);
+    return await ctx.db.insert("users", {
+      email,
+      name: args.name?.trim() || "Admin",
+      passwordHash,
+      salt,
+      role: "developer",
+    });
+  },
+});
 
 /** The user behind a session token, or null if the token is invalid. */
 export const me = query({

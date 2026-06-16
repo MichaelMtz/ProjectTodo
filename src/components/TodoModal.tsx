@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -20,6 +20,11 @@ export default function TodoModal({
   const comments = useQuery(api.comments.listByTodo, { token, todoId });
   const activity = useQuery(api.activity.listByTodo, { token, todoId });
 
+  const attachments = useQuery(api.attachments.listByTodo, { token, todoId });
+  const generateUploadUrl = useMutation(api.attachments.generateUploadUrl);
+  const saveAttachment = useMutation(api.attachments.save);
+  const removeAttachment = useMutation(api.attachments.remove);
+
   const update = useMutation(api.todos.update);
   const removeTodo = useMutation(api.todos.remove);
   const addItem = useMutation(api.checklist.add);
@@ -27,12 +32,14 @@ export default function TodoModal({
   const removeItem = useMutation(api.checklist.remove);
   const addComment = useMutation(api.comments.add);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [newItem, setNewItem] = useState("");
   const [tagDraft, setTagDraft] = useState("");
   const [comment, setComment] = useState("");
   const [saved, setSaved] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   // Hydrate local editable fields once the todo loads.
   useEffect(() => {
@@ -76,6 +83,32 @@ export default function TodoModal({
     setTagDraft("");
   }
 
+  async function handleFileUpload(file: File) {
+    setUploading(true);
+    try {
+      const uploadUrl = await generateUploadUrl({ token });
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      const { storageId } = await result.json();
+      await saveAttachment({
+        token,
+        todoId,
+        storageId,
+        filename: file.name,
+        contentType: file.type,
+        size: file.size,
+      });
+    } catch (err) {
+      console.error("Upload failed:", err);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -106,6 +139,61 @@ export default function TodoModal({
             onChange={(e) => setDescription(e.target.value)}
             onBlur={() => description !== todo.description && save({ description })}
           />
+
+          <label className="modal-section-label">Attachments</label>
+          <div className="attachments">
+            <div className="attachments-grid">
+              {attachments?.map((a) => (
+                <div key={a._id} className="attachment-item">
+                  {a.contentType.startsWith("image/") && a.url ? (
+                    <a href={a.url} target="_blank" rel="noopener noreferrer" className="attachment-thumb-link">
+                      <img src={a.url} alt={a.filename} className="attachment-thumb" />
+                    </a>
+                  ) : (
+                    <a
+                      href={a.url ?? "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="attachment-file"
+                    >
+                      <span className="attachment-file-icon">
+                        {a.contentType === "text/html" ? "🌐" :
+                         a.contentType.includes("pdf") ? "📄" :
+                         a.contentType.includes("word") || a.contentType.includes("document") ? "📝" :
+                         "📎"}
+                      </span>
+                      <span className="attachment-file-name">{a.filename}</span>
+                      <span className="attachment-file-size">{formatFileSize(a.size)}</span>
+                    </a>
+                  )}
+                  <button
+                    className="attachment-del"
+                    title="Remove attachment"
+                    onClick={() => removeAttachment({ token, attachmentId: a._id })}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="attachment-file-input"
+              accept="image/*,.html,.htm,.pdf,.doc,.docx,.txt,.md,.csv,.json,.xml"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleFileUpload(file);
+              }}
+            />
+            <button
+              className="btn attachment-upload-btn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? "Uploading…" : "📎 Add attachment"}
+            </button>
+          </div>
 
           <label className="modal-section-label">
             Checklist
@@ -308,6 +396,12 @@ export default function TodoModal({
       </div>
     </div>
   );
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function PropRow({ label, children }: { label: string; children: React.ReactNode }) {

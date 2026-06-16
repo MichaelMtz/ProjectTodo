@@ -45,46 +45,9 @@ export async function requireUser(
   return session.userId;
 }
 
-export const signUp = mutation({
-  args: {
-    email: v.string(),
-    password: v.string(),
-    name: v.optional(v.string()),
-  },
-  returns: v.object({ token: v.string() }),
-  handler: async (ctx, args) => {
-    const email = normalizeEmail(args.email);
-    if (!email.includes("@")) {
-      throw new ConvexError("Please enter a valid email address.");
-    }
-    if (args.password.length < 6) {
-      throw new ConvexError("Password must be at least 6 characters.");
-    }
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .unique();
-    if (existing) {
-      throw new ConvexError("An account with that email already exists.");
-    }
-    const salt = crypto.randomUUID();
-    const passwordHash = await hashPassword(args.password, salt);
-    // First user gets "developer" role; subsequent users default to "manager".
-    const allUsers = await ctx.db.query("users").collect();
-    const role = allUsers.length === 0 ? ("developer" as const) : ("manager" as const);
-    const userId = await ctx.db.insert("users", {
-      email,
-      name: args.name?.trim() || undefined,
-      passwordHash,
-      salt,
-      role,
-      lastLogin: Date.now(),
-    });
-    const token = newToken();
-    await ctx.db.insert("sessions", { userId, token });
-    return { token };
-  },
-});
+// Self-service sign-up is intentionally not exposed. The first developer is
+// seeded with the `users.bootstrapAdmin` internal mutation; all other users
+// are created in-app by a developer via `users.addUser`.
 
 export const signIn = mutation({
   args: { email: v.string(), password: v.string() },

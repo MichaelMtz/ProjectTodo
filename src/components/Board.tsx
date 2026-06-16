@@ -37,7 +37,7 @@ function group(todos: TodoCard[]): Grouped {
 export default function Board({ phase }: { phase: Phase }) {
   const token = useToken();
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<string>("");
+  const [authorFilter, setAuthorFilter] = useState<string>("");
   const [tag, setTag] = useState<string>("");
   const [openId, setOpenId] = useState<Id<"todos"> | null>(null);
 
@@ -59,10 +59,10 @@ export default function Board({ phase }: { phase: Phase }) {
     if (!todos) return undefined;
     return todos.filter(
       (t) =>
-        (!category || t.category === category) &&
+        (!authorFilter || t.authorId === authorFilter) &&
         (!tag || t.tags.includes(tag)),
     );
-  }, [todos, category, tag]);
+  }, [todos, authorFilter, tag]);
 
   // Sync local columns from the server query unless mid-drag.
   useEffect(() => {
@@ -71,10 +71,14 @@ export default function Board({ phase }: { phase: Phase }) {
     }
   }, [filtered]);
 
-  const allCategories = useMemo(
-    () => [...new Set((todos ?? []).map((t) => t.category).filter(Boolean))] as string[],
-    [todos],
-  );
+  const allAuthors = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const t of todos ?? []) {
+      if (!map.has(t.authorId)) map.set(t.authorId, t.authorName);
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [todos]);
+
   const allTags = useMemo(
     () => [...new Set((todos ?? []).flatMap((t) => t.tags))],
     [todos],
@@ -172,13 +176,13 @@ export default function Board({ phase }: { phase: Phase }) {
         </div>
         <select
           className="board-filter"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          value={authorFilter}
+          onChange={(e) => setAuthorFilter(e.target.value)}
         >
-          <option value="">All categories</option>
-          {allCategories.map((c) => (
-            <option key={c} value={c}>
-              {c}
+          <option value="">All users</option>
+          {allAuthors.map(([id, name]) => (
+            <option key={id} value={id}>
+              {name}
             </option>
           ))}
         </select>

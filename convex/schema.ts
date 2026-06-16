@@ -97,4 +97,12 @@ export default defineSchema({
     authorId: v.optional(v.id("users")),
     message: v.string(),
   }).index("by_todo", ["todoId"]),
+
+  attachments: defineTable({
+    todoId: v.id("todos"),
+    storageId: v.id("_storage"),
+    filename: v.string(),
+    contentType: v.string(),
+    size: v.number(),
+  }).index("by_todo", ["todoId"]),
 });

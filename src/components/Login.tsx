@@ -4,8 +4,7 @@ import { useAuth } from "../auth";
 import "../styles/login.css";
 
 export default function Login() {
-  const { signIn, signUp } = useAuth();
-  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
+  const { signIn } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -19,16 +18,10 @@ export default function Login() {
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
     try {
-      if (flow === "signIn") {
-        await signIn(email, password);
-      } else {
-        await signUp(email, password);
-      }
+      await signIn(email, password);
     } catch (err) {
-      const fallback =
-        flow === "signIn" ? "Could not sign in." : "Could not sign up.";
       setError(
-        err instanceof ConvexError ? String(err.data) : fallback,
+        err instanceof ConvexError ? String(err.data) : "Could not sign in.",
       );
       setSubmitting(false);
     }
@@ -61,7 +54,7 @@ export default function Login() {
               className="input"
               name="password"
               type={showPassword ? "text" : "password"}
-              autoComplete={flow === "signIn" ? "current-password" : "new-password"}
+              autoComplete="current-password"
               placeholder="••••••••"
               required
             />
@@ -90,23 +83,9 @@ export default function Login() {
           {error && <div className="login-error">{error}</div>}
 
           <button className="btn btn--primary login-submit" type="submit" disabled={submitting}>
-            {submitting ? "…" : flow === "signIn" ? "Sign in" : "Create account"}
+            {submitting ? "…" : "Sign in"}
           </button>
         </form>
-
-        <div className="login-switch">
-          {flow === "signIn" ? "New here?" : "Already have an account?"}{" "}
-          <button
-            type="button"
-            className="login-link"
-            onClick={() => {
-              setError(null);
-              setFlow(flow === "signIn" ? "signUp" : "signIn");
-            }}
-          >
-            {flow === "signIn" ? "Create an account" : "Sign in"}
-          </button>
-        </div>
       </div>
     </div>
   );
