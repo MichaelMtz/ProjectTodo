@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Chatbot System Flow — SnoCountry.com</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import { animate } from "https://esm.sh/motion@11.11.17";
+  window.__motion = { animate };
+</script>
+<link rel="stylesheet" href="diagram.css" />
+</head>
+<body class="p-6 md:p-10">
+
+<!-- Header -->
+<div class="max-w-6xl mx-auto mb-8 flex items-center justify-between">
+  <div>
+    <div class="flex items-center gap-3 mb-1">
+      <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg,#3b82f6,#8b5cf6)">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" opacity="0.9"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <span class="text-sm font-semibold text-slate-400 tracking-wide uppercase">System Architecture</span>
+    </div>
+    <h1 class="text-2xl font-bold text-slate-800">AI Chatbot <span class="gradient-text">Data Flow</span></h1>
+    <p class="text-sm text-slate-400 mt-0.5">SnoCountry.com — RAG + Local LLM Pipeline</p>
+  </div>
+  <div class="flex items-center gap-4">
+    <!-- Legend -->
+    <div id="legend" class="flex items-center gap-5 bg-white rounded-xl px-4 py-2.5 shadow-sm border border-slate-100 text-xs text-slate-500">
+      <div class="flex items-center gap-2"><div class="legend-line"></div><span>Data flow</span></div>
+      <div class="flex items-center gap-2"><div class="legend-line solid"></div><span>Connection</span></div>
+      <div id="legend-derek" class="flex items-center gap-2 cursor-pointer select-none" onclick="toggleDerek()"><div class="w-2 h-2 rounded-full bg-green-400"></div><span>Derek - LLM Engineer</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Main diagram + side panel layout -->
+<div class="max-w-6xl mx-auto flex gap-5 items-start">
+
+  <!-- Diagram canvas -->
+  <div class="flex-1 relative" id="diagram-canvas">
+
+    <!-- SVG connector layer -->
+    <svg class="connector-svg" id="connector-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible; z-index:10;">
+      <defs>
+        <marker id="arrow" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <polygon points="0 1, 6 3.5, 0 6" fill="#3b82f6"/>
+        </marker>
+        <marker id="arrow-solid" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <polygon points="0 1, 6 3.5, 0 6" fill="#64748b"/>
+        </marker>
+        <marker id="arrow-active" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <polygon points="0 1, 6 3.5, 0 6" fill="#1d4ed8"/>
+        </marker>
+      </defs>
+    </svg>
+
+    <!-- ── ROW 0: Website ── -->
+    <div class="flex justify-center mb-5" id="row0">
+
+      <!-- SnoCountry.com Website -->
+      <div class="flow-card delay-1 p-4 w-64" id="card-website" onclick="selectCard('website')">
+        <div class="node-highlight"></div>
+        <!-- <div class="pulse-ring"></div> -->
+        <div class="flex items-center gap-3 mb-2">
+          <div class="icon-pill" style="background: linear-gradient(135deg,#eff6ff,#f5f3ff)">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" stroke="#6366f1" stroke-width="1.8"/><path d="M3 9h18M9 21V9" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-medium">AI Chat Bot</div>
+            <div class="text-sm font-semibold text-slate-700">1. SnoCountry.com</div>
+          </div>
+        </div>
+        <div class="flex gap-1.5 flex-wrap">
+          <span class="tech-chip vendor-chip">Netlify ($)</span>
+          <span class="tech-chip">AI Chat Bot</span>
+          <span class="tech-chip">Distributed CDN</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── ROW 1: API endpoints container + User ── -->
+    <div class="flex justify-center items-center gap-6 mt-10 mb-5" id="row1">
+
+      <!-- API endpoints container (web + llm) -->
+      <div class="flow-card delay-1 mr-20 p-3 w-64 bg-slate-50/60" id="card-api-container">
+        <div class="text-[10px] text-slate-400 uppercase tracking-wide font-semibold mb-2 px-1">API Endpoints</div>
+        <div class="flex flex-col gap-2">
+
+          <!-- SnoCountry.com API Endpoints -->
+          <div class="flow-card p-3" id="card-apiweb" onclick="event.stopPropagation(); selectCard('apiweb')">
+            <div class="flex items-center gap-2.5 mb-1.5">
+              <div class="icon-pill" style="background:#f5f3ff;width:28px;height:28px;border-radius:8px">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#6366f1" stroke-width="1.8"/></svg>
+              </div>
+              <div>
+                <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Web snow conditions</div>
+                <div class="text-xs font-semibold text-slate-700">SnoCountry.com API</div>
+              </div>
+            </div>
+            <div class="flex gap-1 flex-wrap">
+              <span class="tech-chip vendor-chip">AWS ($$)</span>
+              <span class="tech-chip vendor-chip">Convex ($)</span>
+            </div>
+          </div>
+
+          <!-- AI chat bot API Endpoints -->
+          <div class="flow-card p-3" id="card-apillm" onclick="event.stopPropagation(); selectCard('apillm')">
+            <div class="flex items-center gap-2.5 mb-1.5">
+              <div class="icon-pill" style="background:#f5f3ff;width:28px;height:28px;border-radius:8px">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </div>
+              <div>
+                <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">LLM RAG data</div>
+                <div class="text-xs font-semibold text-slate-700">3. AI Chat Bot API</div>
+              </div>
+            </div>
+            <div class="flex gap-1 flex-wrap">
+              <span class="tech-chip vendor-chip">+AWS - server ($)</span>
+              <span class="tech-chip vendor-chip">+Convex DB ($)</span>
+              <span class="tech-chip">Fast</span>
+              <span class="tech-chip">TypeScript</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- User / Browser -->
+      <div class="flow-card delay-1 p-4 w-52" id="card-user" onclick="selectCard('user')">
+        <div class="node-highlight"></div>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="icon-pill" style="background:#eff6ff">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="#3b82f6" stroke-width="1.8"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-medium">Visitor</div>
+            <div class="text-sm font-semibold text-slate-700">2. User Browser</div>
+          </div>
+        </div>
+        <div class="flex gap-1.5 flex-wrap">
+          <span class="tech-chip">Chrome / Safari</span>
+          <span class="tech-chip">WebSocket</span>
+          <span class="tech-chip">JavaScript</span>
+        </div>
+      </div>
+
+      <div class="flow-card delay-4 p-4 w-72 derek" id="card-prompt" onclick="selectCard('prompt')">
+        <div class="node-highlight"></div>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="icon-pill" style="background:#fff1f2">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="#f43f5e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="#f43f5e" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-medium">Prompt Assembly</div>
+            <div class="text-sm font-semibold text-slate-700">5. Prompt Builder</div>
+          </div>
+        </div>
+        <div class="flex gap-1.5 flex-wrap">
+          <span class="tech-chip">System Prompt</span>
+          <span class="tech-chip">Context Inject</span>
+          <span class="tech-chip">User Query</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ROW 2: API Gateway ── 
+    <div class="flex justify-center mb-5" id="row2">
+      <div class="flow-card delay-2 p-4 w-72" id="card-api" onclick="selectCard('api')">
+        <div class="node-highlight"></div>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="icon-pill" style="background:#f0fdf4">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-medium">Task — Assigned Roles</div>
+            <div class="text-sm font-semibold text-slate-700">API Gateway / Router</div>
+          </div>
+        </div>
+        <div class="flex gap-1.5 flex-wrap">
+          <span class="tech-chip">FastAPI</span>
+          <span class="tech-chip">Auth</span>
+          <span class="tech-chip">Rate Limit</span>
+          <span class="tech-chip">Streaming</span>
+        </div>
+      </div>
+    </div>
+  -->
+    <!-- ── ROW 3: RAG Pipeline (3 sub-cards) ── -->
+    <div class="flex gap-4 ml-4 mb-5 justify-between" id="row3">
+      <div class="flex flex-col justify-center gap-2">
+              <!-- RAG label -->
+        <div class="flex justify-center">
+          <div id="rag-label" class="bg-blue-50 border border-blue-100 rounded-xl px-5 py-1.5 text-xs font-semibold text-blue-500 tracking-wide uppercase">
+            ↓ RAG Pipeline
+          </div>
+        </div>
+        <div class="flex flex-col justify-center gap-8">
+          <!-- Query Embedding -->
+          <div class="flow-card delay-3 p-4 w-48 derek" id="card-embed" onclick="selectCard('embed')">
+            <div class="node-highlight"></div>
+            <div class="flex items-center gap-2.5 mb-2">
+              <!--<div class="step-num">4</div>-->
+              <div class="icon-pill" style="background:#fefce8;width:28px;height:28px;border-radius:8px">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M2 12h4l3-9 6 18 3-9h4" stroke="#eab308" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div>
+                <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Subtask A</div>
+                <div class="text-xs font-semibold text-slate-700">4a. Snow Conditions</div>
+              </div>
+            </div>
+            <div class="flex gap-1 flex-wrap">
+              <span class="tech-chip">Realtime data</span>
+              <span class="tech-chip">LLM relevant fields</span>
+            </div>
+          </div>
+
+          <!-- Vector Store -->
+          <div class="flow-card delay-3 p-4 w-48 derek" id="card-vector" onclick="selectCard('vector')">
+            <div class="node-highlight"></div>
+            <div class="flex items-center gap-2.5 mb-2">
+              <!--<div class="step-num">4</div>-->
+              <div class="icon-pill" style="background:#fdf4ff;width:28px;height:28px;border-radius:8px">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2" stroke="#a855f7" stroke-width="1.8"/><circle cx="18" cy="6" r="2" stroke="#a855f7" stroke-width="1.8"/><circle cx="6" cy="18" r="2" stroke="#a855f7" stroke-width="1.8"/><circle cx="18" cy="18" r="2" stroke="#a855f7" stroke-width="1.8"/><path d="M8 6h8M6 8v8M18 8v8M8 18h8" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 2"/></svg>
+              </div>
+              <div>
+                <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Subtask B</div>
+                <div class="text-xs font-semibold text-slate-700">4b. Resort Overview + Profile data</div>
+              </div>
+            </div>
+            <div class="flex gap-1 flex-wrap">
+              <span class="tech-chip">pgvector</span>
+              <span class="tech-chip">Similarity</span>
+            </div>
+          </div>
+
+          <!-- Context Retrieval -->
+          <div class="flow-card delay-3 p-4 w-48 derek" id="card-context" onclick="selectCard('context')">
+            <div class="node-highlight"></div>
+            <div class="flex items-center gap-2.5 mb-2">
+              <!--<div class="step-num">4</div>-->
+              <div class="icon-pill" style="background:#fff7ed;width:28px;height:28px;border-radius:8px">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke="#f97316" stroke-width="1.8"/><path d="M21 21l-4.35-4.35" stroke="#f97316" stroke-width="1.8" stroke-linecap="round"/><path d="M8 11h6M11 8v6" stroke="#f97316" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </div>
+              <div>
+                <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Subtask C</div>
+                <div class="text-xs font-semibold text-slate-700">4c. News / Articles Retrieval</div>
+              </div>
+            </div>
+            <div class="flex gap-1 flex-wrap">
+              <span class="tech-chip">Top-K chunks</span>
+              <span class="tech-chip">Re-rank</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="flex flex-col justify-center gap-8">
+        <div class="flex justify-end gap-8 items-end">
+          <!-- Eco / Ollama LLM -->
+          <div class="flow-card delay-5 p-4 w-64 max-h-[175px] derek" id="card-llm" onclick="selectCard('llm')">
+            <div class="node-highlight"></div>
+            <div class="pulse-ring"></div>
+            <div class="flex items-center gap-3 mb-2">
+              <div class="icon-pill" style="background:linear-gradient(135deg,#eff6ff,#f5f3ff)">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/>
+                  <path d="M19 14l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z"/>
+                  <path d="M5 16l.5 1.2 1.2.5-1.2.5L5 19.4l-.5-1.2-1.2-.5 1.2-.5z"/>
+                </svg>
+              </div>
+              <div>
+                <div class="text-xs text-slate-400 font-medium">Llama 3 8B Instruct Lite</div>
+                <div class="text-sm font-semibold text-slate-700">6. AI Brain thinking... 🧠</div>
+              </div>
+            </div>
+            <div class="flex gap-1.5 flex-wrap">
+              <span class="tech-chip vendor-chip">Together.ai ($)</span>
+              <span class="tech-chip">API</span>
+              <span class="tech-chip">GPU / CPU</span>
+              <span class="tech-chip">8B parameters</span>
+              <span class="tech-chip">Chat tuned</span>
+            </div>
+          </div>
+          <!-- Fine-Tune Data -->
+          <div class="flow-card delay-5 p-4 w-52 max-h-[175px] derek" id="card-finetune" onclick="selectCard('finetune')">
+            <div class="node-highlight"></div>
+            <div class="flex items-center gap-3 mb-2">
+              <div class="icon-pill" style="background:#f0fdf4">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </div>
+              <div>
+                <div class="text-xs text-slate-400 font-medium">Domain Data</div>
+                <div class="text-sm font-semibold text-slate-700">Fine-Tune Layer</div>
+              </div>
+            </div>
+            <div class="flex gap-1.5 flex-wrap">
+              <span class="tech-chip">Locals knowledge</span>
+              <span class="tech-chip">Resort data</span>
+              <span class="tech-chip">JSONL</span>
+            </div>
+          </div>
+
+
+        </div>
+        <div class="flow-card delay-6 p-4 w-auto self-start" id="card-response" onclick="selectCard('response')">
+          <div class="node-highlight"></div>
+            <div class="flex items-center gap-3 mb-3">
+              <div class="icon-pill" style="background:#f0fdf4">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div>
+                <div class="text-xs text-slate-400 font-medium"></div>
+                <div class="text-sm font-semibold text-slate-700">7. AI Response → User</div>
+              </div>
+            </div>
+            <div class="ml-40 bg-slate-50 rounded-xl p-3 text-xs text-slate-500 text-right space-y-1.5 border border-slate-100 mb-3">
+              <div class="flex items-center gap-2"><span>What ski resorts in Colorado would you recommend for early December skiing, away from the crowds and larger ski areas</span></div>
+            </div>
+            <!-- Sample response preview -->
+            <div class="bg-slate-50 rounded-xl p-3 text-xs text-slate-500 space-y-1.5 border border-slate-100">
+              <div class="flex items-center gap-2"><span>Early December is a "shoulder season" in Colorado. While the massive resorts like Vail and Breckenridge are already busy with international tourists, several smaller or more remote gems offer a quieter experience.</span></div>
+              <div class="flex items-center gap-2"><span></span></div>
+              <div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div><span>Wolfcreek: Early season snowfall at 120% of average. A mix of 18" base, 50% trails open, groomed.</span></div>
+              <div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-purple-400"></div><span>Monarch:  It’s a great "path less traveled" option. If a southern storm hits, Monarch gets incredible powder while the central mountains stay dry.</span></div>
+              <div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-green-400"></div><span>Copper Mountain when 75% trails can disperse the traffic.</span></div>
+              <div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-orange-400"></div><span>...</span></div>
+            </div>
+          </div>
+      </div>
+    </div>
+
+
+
+
+    <!-- ── ROW 4: Prompt Builder ── -->
+    <div class="flex justify-center mb-5" id="row4">
+
+    </div>
+
+    <!-- ── ROW 5: LLM + Fine-Tune ── -->
+    <div class="flex justify-center gap-5 mb-5" id="row5">
+
+
+    </div>
+
+    <!-- ── ROW 6: Response Output ── -->
+    <div class="flex justify-center" id="row6">
+
+    </div>
+
+  </div><!-- /diagram-canvas -->
+
+  <!-- Side info panel -->
+  <div id="side-panel" class="w-72 flex-shrink-0 flex flex-col gap-4">
+
+    <!-- Flow path indicator (always visible) -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">AI Chatbot Request Path</div>
+      <div class="space-y-2 text-xs" id="flow-path">
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="website" onclick="selectCard('website')"><div class="step-num" style="width:16px;height:16px;font-size:9px">1</div>SnoCountry.com</div>
+        <div class="ml-4 h-3 border-l border-dashed border-slate-200"></div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="user" onclick="selectCard('user')"><div class="step-num" style="width:16px;height:16px;font-size:9px">2</div>User Browser</div>
+        <div class="ml-4 h-3 border-l border-dashed border-slate-200"></div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="apillm" onclick="selectCard('apillm')"><div class="step-num" style="width:16px;height:16px;font-size:9px">3</div>API Gateway / RAG Pipeline </div>
+        <div class="ml-4 h-3 border-l border-dashed border-slate-200"></div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="rag-parent"><div class="step-num" style="width:16px;height:16px;font-size:9px">4</div>RAG Pipeline</div>
+        <div class="ml-7 space-y-1.5 mt-1.5 mb-1.5">
+          <div class="flow-path-step flex items-center gap-2 text-slate-400 cursor-pointer" data-step="embed" onclick="selectCard('embed')"><div class="step-num" style="width:14px;height:14px;font-size:8px;flex-shrink:0">a</div>Query Embedding</div>
+          <div class="flow-path-step flex items-center gap-2 text-slate-400 cursor-pointer" data-step="vector" onclick="selectCard('vector')"><div class="step-num" style="width:14px;height:14px;font-size:8px;flex-shrink:0">b</div>Vector Store</div>
+          <div class="flow-path-step flex items-center gap-2 text-slate-400 cursor-pointer" data-step="context" onclick="selectCard('context')"><div class="step-num" style="width:14px;height:14px;font-size:8px;flex-shrink:0">c</div>Context Retrieval</div>
+        </div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="prompt" onclick="selectCard('prompt')"><div class="step-num" style="width:16px;height:16px;font-size:9px">5</div>Prompt Builder</div>
+        <div class="ml-4 h-3 border-l border-dashed border-slate-200"></div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="llm" onclick="selectCard('llm')"><div class="step-num" style="width:16px;height:16px;font-size:9px">6</div>LLM Inference</div>
+        <div class="ml-4 h-3 border-l border-dashed border-slate-200"></div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="response" onclick="selectCard('response')"><div class="step-num" style="width:16px;height:16px;font-size:9px">7</div>Response → User</div>
+      </div>
+    </div>
+
+    <div id="card-details" class="flow-card p-5 hidden-panel">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <div id="panel-icon" class="icon-pill" style="background:#eff6ff;width:32px;height:32px">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#3b82f6" stroke-width="1.8"/><path d="M12 8v4M12 16h.01" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/></svg>
+          </div>
+          <span id="panel-title" class="text-sm font-semibold text-slate-700"></span>
+        </div>
+        <button onclick="closePanel()" class="text-slate-300 hover:text-slate-500 transition-colors text-lg leading-none">×</button>
+      </div>
+      <div id="panel-badge" class="mb-3"></div>
+      <p id="panel-desc" class="text-xs text-slate-500 leading-relaxed mb-4"></p>
+      <div id="panel-stack" class="mb-4"></div>
+      <div id="panel-details" class="space-y-2"></div>
+    </div>
+  </div>
+
+</div><!-- /flex layout -->
+
+<!-- Plans and Reference materials -->
+<div id="plans-and-reference-materials" class="max-w-6xl mx-auto">
+  <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Plans and Reference materials</div>
+    <div class="flex gap-2 justify-between" id="plans-chips">
+      <span class="tech-chip not-orange plan-chip" data-plan="timeline" onclick="showPlanDetail('timeline')">Timeline</span>
+      <span class="tech-chip not-orange plan-chip" data-plan="cost" onclick="showPlanDetail('cost')">Cost</span>
+      <span class="tech-chip not-orange plan-chip" data-plan="outcomes" onclick="showPlanDetail('outcomes')">Outcomes + Benefits</span>
+      <span class="tech-chip not-orange plan-chip" data-plan="traffic" onclick="showPlanDetail('traffic')">SnoCountry Traffic</span>
+      <span class="tech-chip not-orange plan-chip" data-plan="weights" onclick="showPlanDetail('weights')">Open vs Closed Coding weight LLMs</span>
+      <span class="tech-chip not-orange plan-chip" data-plan="projects" onclick="showPlanDetail('projects')">2026 Projects</span>
+    </div>
+  </div>
+</div>
+
+<!-- Plan detail (full-width card, populated on chip click) -->
+<div id="plan-detail" class="max-w-6xl mx-auto mt-4">
+  <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <div id="plan-detail-title" class="text-xs font-semibold text-slate-400 uppercase tracking-wide"></div>
+      <button onclick="closePlanDetail()" class="text-slate-300 hover:text-slate-500 transition-colors text-lg leading-none">×</button>
+    </div>
+    <div id="plan-detail-body" class="text-sm text-slate-600"></div>
+  </div>
+</div>
+
+<!-- Bottom latency bar 
+<div class="max-w-6xl mx-auto mt-8">
+  <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Estimated Latency Budget</div>
+    <div class="flex gap-2 items-end">
+      <div class="flex-1">
+        <div class="text-[10px] text-slate-400 mb-1">Network</div>
+        <div class="h-5 rounded-md bg-blue-100 flex items-center px-2 text-[10px] text-blue-500 font-semibold" style="width:15%">~20ms</div>
+      </div>
+      <div class="flex-1">
+        <div class="text-[10px] text-slate-400 mb-1">Auth / Route</div>
+        <div class="h-5 rounded-md bg-green-100 flex items-center px-2 text-[10px] text-green-600 font-semibold" style="width:10%">~10ms</div>
+      </div>
+      <div class="flex-1">
+        <div class="text-[10px] text-slate-400 mb-1">Embedding</div>
+        <div class="h-5 rounded-md bg-yellow-100 flex items-center px-2 text-[10px] text-yellow-600 font-semibold" style="width:20%">~80ms</div>
+      </div>
+      <div class="flex-1">
+        <div class="text-[10px] text-slate-400 mb-1">Vector Search</div>
+        <div class="h-5 rounded-md bg-purple-100 flex items-center px-2 text-[10px] text-purple-600 font-semibold" style="width:15%">~50ms</div>
+      </div>
+      <div class="flex-1">
+        <div class="text-[10px] text-slate-400 mb-1">LLM Inference</div>
+        <div class="h-5 rounded-md bg-indigo-100 flex items-center px-2 text-[10px] text-indigo-600 font-semibold" style="width:60%">~1.5–4s (streaming)</div>
+      </div>
+    </div>
+  </div>
+</div>
+-->
+<script src="diagram.js"></script>
+</body>
+</html>

@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Eval Script &mdash; File Reference &amp; Usage Guide</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --accent: #d97706;
+    --accent-light: #fffbeb;
+    --accent-dark: #92400e;
+    --code-bg: #0f172a;
+    --code-ink: #e2e8f0;
+    --inline-code-bg: #eef2f7;
+    --inline-code-ink: #b91c1c;
+    --table-border: #e5e7eb;
+    --table-head: #f1f5f9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px; line-height: 1.55;
+  }
+  header.page {
+    background: linear-gradient(135deg, #d97706 0%, #92400e 100%);
+    color: #fff; padding: 28px 24px;
+  }
+  header.page h1 { margin: 0 0 6px 0; font-size: 1.6rem; letter-spacing: -0.01em; color: white; }
+  header.page .meta { opacity: 0.85; font-size: 0.9rem; }
+  h2 { font-size: 1.25rem; margin: 28px 0 10px; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; }
+  h3 { font-size: 1.05rem; margin: 20px 0 8px; }
+  h4 { font-size: 0.95rem; font-weight: 700; margin: 14px 0 6px; color: #334155; }
+  p { margin: 10px 0; }
+  ul, ol { padding-left: 22px; margin: 10px 0; }
+  li { margin: 4px 0; }
+  hr { border: none; border-top: 1px dashed #cbd5e1; margin: 22px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.92rem; background: #fff; }
+  th, td { border: 1px solid var(--table-border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--table-head); font-weight: 600; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.88em; background: var(--inline-code-bg); color: var(--inline-code-ink);
+    padding: 1px 5px; border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg); color: var(--code-ink);
+    padding: 14px 16px; border-radius: 8px; overflow-x: auto;
+    font-size: 0.85rem; line-height: 1.45; margin: 12px 0;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
+  small { font-size: 0.82rem; color: var(--muted); }
+
+  .verdict {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.82rem; font-weight: 700; padding: 3px 10px;
+    border-radius: 20px; letter-spacing: 0.02em; white-space: nowrap;
+  }
+  .verdict-yes { background: #dcfce7; color: #15803d; }
+  .verdict-no { background: #fee2e2; color: #b91c1c; }
+  .verdict-maybe { background: #fef9c3; color: #a16207; }
+  .verdict-blue { background: #dbeafe; color: #1d4ed8; }
+  .verdict-amber { background: #fef3c7; color: #92400e; }
+  .verdict-gray { background: #f1f5f9; color: #64748b; }
+  .verdict-purple { background: #ede9fe; color: #6d28d9; }
+
+  .callout {
+    border-radius: 12px; padding: 14px 18px; margin: 16px 0; font-size: 0.92rem; line-height: 1.55;
+  }
+  .callout-insight { background: linear-gradient(135deg, #eff6ff, #f0f9ff); border: 1px solid #bfdbfe; color: #1e40af; }
+  .callout-rec { background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border: 1px solid #bbf7d0; color: #166534; }
+  .callout-warn { background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #fde68a; color: #92400e; }
+  .callout-amber { background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #fcd34d; color: #78350f; }
+  .callout strong { color: inherit; }
+
+  /* File tree */
+  .file-tree {
+    background: var(--code-bg); color: var(--code-ink);
+    border-radius: 10px; padding: 18px 22px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem; line-height: 1.8; margin: 12px 0;
+  }
+  .file-tree .dir { color: #fbbf24; font-weight: 700; }
+  .file-tree .file { color: #a5b4fc; }
+  .file-tree .comment { color: #64748b; font-style: italic; }
+  .file-tree .generated { color: #86efac; }
+  .file-tree .fixture { color: #fca5a5; }
+
+  /* File detail card */
+  .file-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    margin: 16px 0; overflow: hidden;
+  }
+  .file-card-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px; border-bottom: 1px solid #e5e7eb;
+    background: #fafbfc;
+  }
+  .file-card-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .file-card-title { font-weight: 700; font-size: 1rem; color: #1f2937; }
+  .file-card-sub { font-size: 0.8rem; color: #6b7280; margin-top: 1px; }
+  .file-card-header { position: relative; }
+  .file-card-dl {
+    margin-left: auto; flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.78rem; font-weight: 600; color: #6b7280;
+    text-decoration: none; padding: 5px 10px;
+    border: 1px solid #e2e6ec; border-radius: 7px; background: #fff;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+  .file-card-dl:hover { color: var(--accent-dark); border-color: var(--accent); background: var(--accent-light); }
+  .file-card-dl svg { display: block; }
+  .file-card-body { padding: 16px 18px; }
+  .file-card-body h4 { margin-top: 0; }
+
+  /* Function list */
+  .fn-list { list-style: none; padding: 0; margin: 10px 0; }
+  .fn-list li {
+    padding: 8px 12px; margin: 6px 0;
+    background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px;
+    font-size: 0.9rem;
+  }
+  .fn-list li code { font-weight: 600; }
+  .fn-list li .fn-desc { color: #475569; margin-top: 2px; font-size: 0.85rem; }
+
+  /* Pipeline diagram */
+  .pipeline {
+    display: flex; align-items: center; gap: 0;
+    flex-wrap: wrap; margin: 16px 0; justify-content: center;
+  }
+  .pipeline-step {
+    background: #fff; border: 2px solid #e5e7eb; border-radius: 10px;
+    padding: 10px 16px; text-align: center; font-size: 0.88rem; font-weight: 600;
+    min-width: 120px;
+  }
+  .pipeline-step .step-sub { font-weight: 400; font-size: 0.78rem; color: #6b7280; margin-top: 2px; }
+  .pipeline-arrow {
+    font-size: 1.2rem; color: #d97706; padding: 0 6px; font-weight: 700;
+  }
+  .pipeline-step.active { border-color: #d97706; background: #fffbeb; }
+
+  /* ---------- Layout with sidebar ---------- */
+  .layout { max-width: 1280px; margin: 0 auto; display: flex; align-items: flex-start; gap: 28px; padding: 0 20px; }
+  .layout > main { flex: 1 1 auto; min-width: 0; max-width: 920px; margin: 0; padding: 24px 0 80px; }
+  .sidebar {
+    flex: 0 0 300px; position: sticky; top: 16px; align-self: flex-start;
+    max-height: calc(100vh - 32px); overflow-y: auto; padding: 20px 0;
+  }
+  .sidebar-inner { background: #f1f3f6; border: 1px solid #e2e6ec; border-radius: 12px; padding: 14px 12px; }
+  .sidebar-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; padding: 4px 8px 10px; }
+  .prompt-list { display: flex; flex-direction: column; gap: 8px; }
+  .prompt-card {
+    display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+    background: #ffffff; border: 1px solid #e2e6ec; border-radius: 10px;
+    text-decoration: none; color: inherit; cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.05s ease;
+  }
+  .prompt-card:hover { border-color: #fcd34d; background: #fffbeb; }
+  .prompt-card:active { transform: translateY(1px); }
+  .prompt-card .card-num {
+    flex: 0 0 28px; height: 28px; width: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; background: #eef2f7; color: #94a3b8;
+    border: 1px solid #e2e6ec;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .prompt-card .card-body { min-width: 0; flex: 1 1 auto; }
+  .prompt-card .card-title {
+    font-size: 0.88rem; font-weight: 600; color: #1f2937; line-height: 1.3;
+    overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .prompt-card .card-sub { font-size: 0.75rem; color: #6b7280; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .prompt-card.active { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .prompt-card.active .card-num { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+  .prompt-card.active .card-title { color: var(--accent-dark); }
+  main > section[id^="section-"], main h2, main h3, main h4 { scroll-margin-top: 16px; }
+  main h2, main h3, main h4 { position: relative; padding-right: 36px; }
+  .bookmark-toggle {
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; border: none; border-radius: 6px; color: #94a3b8; cursor: pointer; padding: 0; opacity: 1;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+  .bookmark-toggle:hover { color: var(--accent); background: var(--accent-light); }
+  .bookmark-toggle:focus { outline: 2px solid #fcd34d; outline-offset: 1px; }
+  .bookmark-toggle.is-bookmarked { color: var(--accent); }
+  .bookmark-toggle svg { display: block; }
+  .bookmark-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e2e6ec; }
+  .bookmark-empty { font-size: 0.78rem; color: #6b7280; padding: 4px 8px 6px; line-height: 1.4; }
+  .bookmark-list { display: flex; flex-direction: column; gap: 6px; }
+  .bookmark-card {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #ffffff;
+    border: 1px solid #e2e6ec; border-radius: 8px; text-decoration: none; color: inherit; cursor: pointer;
+    font-size: 0.83rem; line-height: 1.3;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+  .bookmark-card:hover { border-color: #fcd34d; background: #fffbeb; }
+  .bookmark-card.active { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .bookmark-card .bm-icon { flex: 0 0 16px; color: var(--accent); display: inline-flex; align-items: center; justify-content: center; }
+  .bookmark-card .bm-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1f2937; }
+  .bookmark-card .bm-remove {
+    flex: 0 0 22px; width: 22px; height: 22px; border-radius: 50%; border: none; background: transparent;
+    color: #94a3b8; cursor: pointer; font-size: 14px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0; opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .bookmark-card:hover .bm-remove, .bookmark-card .bm-remove:focus { opacity: 1; }
+  .bookmark-card .bm-remove:hover { color: #b91c1c; background: #fee2e2; }
+  .progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+    background: linear-gradient(90deg, #d97706 0%, #fbbf24 100%);
+    z-index: 200; transition: width 0.08s linear; pointer-events: none;
+  }
+  .menu-toggle {
+    display: none; position: fixed; top: 12px; left: 12px; z-index: 120;
+    width: 44px; height: 44px; border-radius: 10px; background: #ffffff;
+    border: 1px solid #e2e6ec; box-shadow: 0 2px 10px rgba(15, 23, 42, 0.15);
+    cursor: pointer; align-items: center; justify-content: center; padding: 0;
+  }
+  .menu-toggle:hover { background: #fffbeb; border-color: #fcd34d; }
+  .menu-toggle .bars { display: flex; flex-direction: column; gap: 4px; }
+  .menu-toggle .bars span { display: block; width: 20px; height: 2px; background: #1f2937; border-radius: 1px; }
+  .drawer-backdrop { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); z-index: 110; opacity: 0; transition: opacity 0.2s ease; }
+  .drawer-backdrop.is-open { display: block; opacity: 1; }
+  .sidebar-close {
+    display: none; position: absolute; top: 10px; right: 10px;
+    width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e2e6ec;
+    background: #ffffff; color: #475569; cursor: pointer; font-size: 18px; line-height: 1;
+    align-items: center; justify-content: center; padding: 0; z-index: 1;
+  }
+  .sidebar-close:hover { background: #f1f5f9; color: #1f2937; }
+  body.no-scroll { overflow: hidden; }
+  @media (max-width: 1024px) {
+    .layout { padding: 0; }
+    .layout > main { max-width: 920px; margin: 0 auto; padding: 24px 20px 80px; }
+    .menu-toggle { display: flex; }
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 320px; max-width: 85vw; max-height: none;
+      z-index: 115; background: #f1f3f6; overflow-y: auto; padding: 16px 12px;
+      transform: translateX(-100%); transition: transform 0.25s ease; box-shadow: 2px 0 16px rgba(0,0,0,0.12);
+    }
+    .sidebar.is-open { transform: translateX(0); }
+    .sidebar-inner { background: transparent; border: none; padding: 36px 6px 6px; }
+    .sidebar-close { display: flex; }
+  }
+  .footer { text-align: center; color: var(--muted); font-size: 0.8rem; margin: 40px 0 20px; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar" aria-hidden="true"></div>
+<button class="menu-toggle" id="menuToggle" type="button" aria-label="Open section menu" aria-controls="sidebar" aria-expanded="false">
+  <span class="bars"><span></span><span></span><span></span></span>
+</button>
+<div class="drawer-backdrop" id="drawerBackdrop" aria-hidden="true"></div>
+
+<header class="page">
+  <h1>Python Eval Script &mdash; File Reference &amp; Usage Guide</h1>
+  <div class="meta">SnoCountry AI Chat &bull; eval/ directory &bull; 6 source files &bull; zero external dependencies &bull; ~$0.50 per run</div>
+</header>
+
+<div class="layout">
+
+<aside class="sidebar" id="sidebar" aria-label="Section navigation">
+  <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Close section menu">&times;</button>
+  <div class="sidebar-inner">
+    <div class="sidebar-title">Sections</div>
+    <nav class="prompt-list" id="promptList">
+      <a class="prompt-card" href="#section-1" data-target="section-1">
+        <div class="card-num">1</div>
+        <div class="card-body"><div class="card-title">Directory structure</div><div class="card-sub">File tree with role annotations</div></div>
+      </a>
+      <a class="prompt-card" href="#section-2" data-target="section-2">
+        <div class="card-num">2</div>
+        <div class="card-body"><div class="card-title">File roles at a glance</div><div class="card-sub">Purpose table for every file</div></div>
+      </a>
+      <a class="prompt-card" href="#section-3" data-target="section-3">
+        <div class="card-num">3</div>
+        <div class="card-body"><div class="card-title">Pipeline flow</div><div class="card-sub">How the 3 phases connect</div></div>
+      </a>
+      <a class="prompt-card" href="#section-4" data-target="section-4">
+        <div class="card-num">4</div>
+        <div class="card-body"><div class="card-title">run_eval.py</div><div class="card-sub">Main entry point &amp; orchestrator</div></div>
+      </a>
+      <a class="prompt-card" href="#section-5" data-target="section-5">
+        <div class="card-num">5</div>
+        <div class="card-body"><div class="card-title">config.py</div><div class="card-sub">Models, API keys, parameters</div></div>
+      </a>
+      <a class="prompt-card" href="#section-6" data-target="section-6">
+        <div class="card-num">6</div>
+        <div class="card-body"><div class="card-title">runner.py</div><div class="card-sub">API caller &amp; prompt assembler</div></div>
+      </a>
+      <a class="prompt-card" href="#section-7" data-target="section-7">
+        <div class="card-num">7</div>
+        <div class="card-body"><div class="card-title">scorer.py</div><div class="card-sub">Faithfulness &amp; signal checks</div></div>
+      </a>
+      <a class="prompt-card" href="#section-8" data-target="section-8">
+        <div class="card-num">8</div>
+        <div class="card-body"><div class="card-title">report.py</div><div class="card-sub">HTML comparison generator</div></div>
+      </a>
+      <a class="prompt-card" href="#section-9" data-target="section-9">
+        <div class="card-num">9</div>
+        <div class="card-body"><div class="card-title">Fixtures</div><div class="card-sub">questions.json &amp; system_prompt.txt</div></div>
+      </a>
+      <a class="prompt-card" href="#section-10" data-target="section-10">
+        <div class="card-num">10</div>
+        <div class="card-body"><div class="card-title">Output files</div><div class="card-sub">What gets generated in results/</div></div>
+      </a>
+      <a class="prompt-card" href="#section-11" data-target="section-11">
+        <div class="card-num">11</div>
+        <div class="card-body"><div class="card-title">Quick-start commands</div><div class="card-sub">Copy-paste recipes</div></div>
+      </a>
+    </nav>
+    <section class="bookmark-section" aria-label="Bookmarks">
+      <div class="sidebar-title">Bookmarks</div>
+      <div class="bookmark-empty" id="bookmarkEmpty">Click the bookmark icon next to any heading to save it here.</div>
+      <nav class="bookmark-list" id="bookmarkList"></nav>
+    </section>
+  </div>
+</aside>
+
+<main>
+
+<p>Complete reference for the Python eval script that tests Llama 3.1 8B, Qwen 3.5 9B, and Llama 3.3 70B against 18 questions. Zero external dependencies &mdash; uses only Python's standard library (<code>urllib</code>, <code>json</code>, <code>csv</code>, <code>re</code>). See <a href="POC-D-Eval-Question-Script.html">Eval Script Design Philosophy</a> for the reasoning behind each design decision and <a href="Model-Evaluation-Question-Set.html">Model Evaluation Question Set</a> for the 18 questions and scoring rubric.</p>
+
+<hr>
+
+<!-- ===== SECTION 1 ===== -->
+<section id="section-1">
+<h2>1. Directory structure</h2>
+
+<div class="file-tree">
+<span class="dir">eval/</span><br>
+│<br>
+├── <span class="file">run_eval.py</span>             <span class="comment"># Main entry point &mdash; orchestrates all 3 phases</span><br>
+├── <span class="file">config.py</span>               <span class="comment"># API keys, model IDs, generation params, paths</span><br>
+├── <span class="file">runner.py</span>               <span class="comment"># Phase 1: calls Together.ai, saves raw JSON</span><br>
+├── <span class="file">scorer.py</span>               <span class="comment"># Phase 2: mechanical faithfulness + signal checks</span><br>
+├── <span class="file">report.py</span>               <span class="comment"># Phase 3: generates side-by-side HTML comparison</span><br>
+│<br>
+├── <span class="dir">fixtures/</span>               <span class="comment"># Controlled inputs (you edit these)</span><br>
+│   ├── <span class="fixture">questions.json</span>      <span class="comment"># 18 questions + RAG context fixtures + expected behavior</span><br>
+│   └── <span class="fixture">system_prompt.txt</span>  <span class="comment"># Hardened system prompt for all models</span><br>
+│<br>
+├── <span class="dir">results/</span>                <span class="comment"># Generated outputs (gitignored)</span><br>
+│   ├── <span class="dir">raw/</span>                <span class="comment"># Individual JSON per model &times; question</span><br>
+│   │   ├── <span class="generated">TIMESTAMP_Q01_Llama-3.1-8B.json</span><br>
+│   │   ├── <span class="generated">TIMESTAMP_Q01_Qwen-3.5-9B.json</span><br>
+│   │   ├── <span class="generated">TIMESTAMP_Q01_Llama-3.3-70B.json</span><br>
+│   │   └── <span class="generated">... (54 files total)</span><br>
+│   ├── <span class="generated">eval-TIMESTAMP.json</span>              <span class="comment"># Combined results (all 54 calls)</span><br>
+│   ├── <span class="generated">eval-TIMESTAMP-scored.json</span>       <span class="comment"># Auto-scored results</span><br>
+│   ├── <span class="generated">eval-TIMESTAMP-scores.csv</span>        <span class="comment"># CSV template for human scoring</span><br>
+│   └── <span class="generated">eval-TIMESTAMP-comparison.html</span>   <span class="comment"># Side-by-side visual report</span><br>
+│<br>
+├── <span class="comment">poc-eval.json</span>           <span class="comment"># Pre-existing: 20-question POC eval set</span><br>
+├── <span class="comment">full-eval.json</span>          <span class="comment"># Pre-existing: 30+ question comprehensive set</span><br>
+└── <span class="comment">README.md</span>               <span class="comment"># Pre-existing: eval schema docs</span>
+</div>
+
+<hr>
+</section>
+
+<!-- ===== SECTION 2 ===== -->
+<section id="section-2">
+<h2>2. File roles at a glance</h2>
+
+<table>
+  <thead>
+    <tr><th>File</th><th>Type</th><th>Purpose</th><th>When you touch it</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>run_eval.py</code></td>
+      <td><span class="verdict verdict-amber">Orchestrator</span></td>
+      <td>Main entry point. Runs all 3 phases in sequence: runner &rarr; scorer &rarr; report. Also supports <code>--score-only</code> and <code>--report-only</code> for re-processing existing results.</td>
+      <td>Rarely &mdash; it's the stable glue layer</td>
+    </tr>
+    <tr>
+      <td><code>config.py</code></td>
+      <td><span class="verdict verdict-blue">Configuration</span></td>
+      <td>All tunable parameters in one place: model IDs, Together.ai pricing, temperature, max tokens, directory paths, faithfulness ignore list.</td>
+      <td>When you add/swap models, change token limits, or update pricing</td>
+    </tr>
+    <tr>
+      <td><code>runner.py</code></td>
+      <td><span class="verdict verdict-yes">Phase 1</span></td>
+      <td>Assembles prompts from fixtures, calls Together.ai API for each model &times; question, saves raw JSON responses with metadata (tokens, latency, cost).</td>
+      <td>Only if you change the prompt template format</td>
+    </tr>
+    <tr>
+      <td><code>scorer.py</code></td>
+      <td><span class="verdict verdict-yes">Phase 2</span></td>
+      <td>Mechanical scoring: extracts numbers from responses and verifies against fixture values (faithfulness), detects pass/fail signal phrases (guardrails), generates CSV template for human scoring.</td>
+      <td>When you add new scoring rules or adjust the ignore list</td>
+    </tr>
+    <tr>
+      <td><code>report.py</code></td>
+      <td><span class="verdict verdict-yes">Phase 3</span></td>
+      <td>Generates a self-contained HTML comparison report with side-by-side model responses, auto-scores, latency, cost, and flagged issues per question.</td>
+      <td>When you want to customize the HTML output format</td>
+    </tr>
+    <tr>
+      <td><code>fixtures/questions.json</code></td>
+      <td><span class="verdict verdict-purple">Fixture</span></td>
+      <td>The 18 eval questions with full RAG context blocks (<code>LIVE_DATA</code>, <code>KNOWLEDGE</code>, <code>NEWS</code>), expected behavior descriptions, faithfulness values, and pass/fail signal lists.</td>
+      <td>When you add, edit, or refine questions or context data</td>
+    </tr>
+    <tr>
+      <td><code>fixtures/system_prompt.txt</code></td>
+      <td><span class="verdict verdict-purple">Fixture</span></td>
+      <td>The hardened system prompt sent identically to all 3 models. Matches the production prompt from <code>rag-plan.md</code>.</td>
+      <td>When you update the production system prompt</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr>
+</section>
+
+<!-- ===== SECTION 3 ===== -->
+<section id="section-3">
+<h2>3. Pipeline flow</h2>
+
+<div class="pipeline">
+  <div class="pipeline-step active">
+    <strong>Phase 1</strong>
+    <div class="step-sub">runner.py</div>
+    <div class="step-sub">Call Together.ai</div>
+  </div>
+  <div class="pipeline-arrow">&rarr;</div>
+  <div class="pipeline-step active">
+    <strong>Phase 2</strong>
+    <div class="step-sub">scorer.py</div>
+    <div class="step-sub">Auto-score</div>
+  </div>
+  <div class="pipeline-arrow">&rarr;</div>
+  <div class="pipeline-step active">
+    <strong>Phase 3</strong>
+    <div class="step-sub">report.py</div>
+    <div class="step-sub">HTML report</div>
+  </div>
+  <div class="pipeline-arrow">&rarr;</div>
+  <div class="pipeline-step">
+    <strong>Human review</strong>
+    <div class="step-sub">Google Sheets</div>
+    <div class="step-sub">Fill in 1&ndash;5 scores</div>
+  </div>
+</div>
+
+<p>Each phase reads the output of the previous phase. Phases 2 and 3 can be re-run independently on existing results:</p>
+
+<pre><code># Re-score without re-running API calls
+python run_eval.py --score-only results/eval-20260608-201500.json
+
+# Re-generate report without re-scoring
+python run_eval.py --report-only results/eval-20260608-201500.json</code></pre>
+
+<div class="callout callout-warn">
+  <strong>Phase 1 costs money (~$0.50).</strong> Phases 2 and 3 are free &mdash; they only process local JSON files. You can re-score and re-generate reports as many times as you want without additional API calls.
+</div>
+
+<hr>
+</section>
+
+<!-- ===== SECTION 4 ===== -->
+<section id="section-4">
+<h2>4. <code>run_eval.py</code> &mdash; main entry point</h2>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <div class="file-card-icon" style="background:#d97706;">PY</div>
+    <div>
+      <div class="file-card-title">run_eval.py</div>
+      <div class="file-card-sub">Orchestrator &mdash; runs all 3 phases in sequence</div>
+    </div>
+    <a class="file-card-dl" href="eval/run_eval.py" download title="Download run_eval.py"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10"/></svg>View</a>
+  </div>
+  <div class="file-card-body">
+    <h4>What it does</h4>
+    <p>The single command you run. It imports <code>runner</code>, <code>scorer</code>, and <code>report</code>, then executes them in order. Handles argument parsing for all operational modes (full run, dry run, single model, single question, score-only, report-only).</p>
+
+    <h4>Key functions</h4>
+    <ul class="fn-list">
+      <li><code>main()</code><div class="fn-desc">Parses CLI arguments, dispatches to the correct mode, prints final summary with next-steps checklist.</div></li>
+      <li><code>find_latest_results()</code><div class="fn-desc">Finds the most recent <code>eval-TIMESTAMP.json</code> in <code>results/</code> (excludes scored/comparison files).</div></li>
+      <li><code>run_scorer(path, verbose)</code><div class="fn-desc">Wrapper that loads results JSON, scores each result, prints summary, generates CSV and scored JSON.</div></li>
+      <li><code>run_report(path)</code><div class="fn-desc">Wrapper that loads results JSON and generates the comparison HTML.</div></li>
+    </ul>
+
+    <h4>CLI flags</h4>
+    <table>
+      <thead><tr><th>Flag</th><th>Example</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>--dry-run</code></td><td><code>python run_eval.py --dry-run</code></td><td>Shows prompt sizes and model IDs without calling the API. Free.</td></tr>
+        <tr><td><code>--model N</code></td><td><code>python run_eval.py --model 0</code></td><td>Run only one model (0=Llama 8B, 1=Qwen 9B, 2=Llama 70B).</td></tr>
+        <tr><td><code>--question ID</code></td><td><code>python run_eval.py --question Q07</code></td><td>Run only one question across all models.</td></tr>
+        <tr><td><code>--verbose / -v</code></td><td><code>python run_eval.py -v</code></td><td>Show detailed per-question scoring in terminal output.</td></tr>
+        <tr><td><code>--score-only FILE</code></td><td><code>python run_eval.py --score-only results/eval-*.json</code></td><td>Skip API calls. Re-run scorer on existing results.</td></tr>
+        <tr><td><code>--report-only FILE</code></td><td><code>python run_eval.py --report-only results/eval-*.json</code></td><td>Skip API calls + scoring. Re-generate HTML report only.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<hr>
+</section>
+
+<!-- ===== SECTION 5 ===== -->
+<section id="section-5">
+<h2>5. <code>config.py</code> &mdash; configuration</h2>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <div class="file-card-icon" style="background:#2563eb;">PY</div>
+    <div>
+      <div class="file-card-title">config.py</div>
+      <div class="file-card-sub">All tunable parameters in one place</div>
+    </div>
+    <a class="file-card-dl" href="eval/config.py" download title="Download config.py"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10"/></svg>View</a>
+  </div>
+  <div class="file-card-body">
+    <h4>What it contains</h4>
+    <table>
+      <thead><tr><th>Constant</th><th>Value</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><code>TOGETHER_API_KEY</code></td><td>From <code>$TOGETHER_API_KEY</code> env var</td><td>Never hardcoded &mdash; set in your shell before running</td></tr>
+        <tr><td><code>TOGETHER_BASE_URL</code></td><td><code>https://api.together.xyz/v1/chat/completions</code></td><td>Together.ai OpenAI-compatible endpoint</td></tr>
+        <tr><td><code>MODELS</code></td><td>List of 3 model configs</td><td>Each has <code>id</code>, <code>label</code>, <code>role</code>, input/output cost per M tokens</td></tr>
+        <tr><td><code>TEMPERATURE</code></td><td><code>0</code></td><td>Deterministic for reproducible comparisons</td></tr>
+        <tr><td><code>MAX_TOKENS</code></td><td><code>350</code></td><td>Matches production token budget from <code>rag-plan.md</code></td></tr>
+        <tr><td><code>FAITHFULNESS_IGNORE</code></td><td>Set of strings</td><td>Numbers to skip during faithfulness checks (years, ordinals, hour windows)</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Model configuration</h4>
+    <table>
+      <thead><tr><th>#</th><th>Label</th><th>Model ID</th><th>Role</th><th>Input $/M</th><th>Output $/M</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>Llama 3.1 8B</td><td><code>meta-llama/Meta-Llama-3.1-8B-Instruct-Reference</code></td><td><span class="verdict verdict-blue">fine-tune-target</span></td><td>$0.14</td><td>$0.14</td></tr>
+        <tr><td>1</td><td>Qwen 3.5 9B</td><td><code>Qwen/Qwen3.5-9B</code></td><td><span class="verdict verdict-purple">contender</span></td><td>$0.17</td><td>$0.25</td></tr>
+        <tr><td>2</td><td>Llama 3.3 70B</td><td><code>meta-llama/Llama-3.3-70B-Instruct-Turbo</code></td><td><span class="verdict verdict-amber">benchmark</span></td><td>$1.04</td><td>$1.04</td></tr>
+      </tbody>
+    </table>
+
+    <h4>How to add a model</h4>
+    <p>Append a new dict to the <code>MODELS</code> list. The runner will automatically include it in all eval runs.</p>
+    <pre><code>{
+    "id": "Qwen/Qwen3-8B",
+    "label": "Qwen 3 8B",
+    "role": "contender-2",
+    "cost_per_m_input": 0.15,
+    "cost_per_m_output": 0.20,
+}</code></pre>
+  </div>
+</div>
+
+<hr>
+</section>
+
+<!-- ===== SECTION 6 ===== -->
+<section id="section-6">
+<h2>6. <code>runner.py</code> &mdash; API caller &amp; prompt assembler</h2>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <div class="file-card-icon" style="background:#15803d;">PY</div>
+    <div>
+      <div class="file-card-title">runner.py</div>
+      <div class="file-card-sub">Phase 1 &mdash; calls Together.ai for each model &times; question</div>
+    </div>
+    <a class="file-card-dl" href="eval/runner.py" download title="Download runner.py"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10"/></svg>View</a>
+  </div>
+  <div class="file-card-body">
+    <h4>What it does</h4>
+    <p>Loads the system prompt and questions from <code>fixtures/</code>, assembles prompts using XML-fenced RAG context blocks (matching the production prompt template from <code>rag-plan.md</code>), calls the Together.ai chat completions API, and saves both individual raw JSON files and a combined results file.</p>
+
+    <h4>Key functions</h4>
+    <ul class="fn-list">
+      <li><code>load_system_prompt()</code><div class="fn-desc">Reads <code>fixtures/system_prompt.txt</code> and returns it as a string.</div></li>
+      <li><code>load_questions()</code><div class="fn-desc">Reads <code>fixtures/questions.json</code> and returns the parsed data including categories and all 18 questions.</div></li>
+      <li><code>build_user_message(question_obj)</code><div class="fn-desc">Assembles the user-role message from the question's context fixture. Wraps live data in <code>&lt;LIVE_DATA&gt;</code>, knowledge chunks in <code>&lt;KNOWLEDGE&gt;</code>, and news in <code>&lt;NEWS&gt;</code> tags with <code>untrusted="true"</code> attributes &mdash; same XML fencing the production RAG pipeline uses.</div></li>
+      <li><code>call_together(model_id, system_prompt, user_message)</code><div class="fn-desc">Makes the HTTP POST to Together.ai using <code>urllib</code> (no <code>requests</code> dependency). Returns a dict with content, token counts, latency, finish reason, or error details. Timeout: 30 seconds.</div></li>
+      <li><code>calc_cost(model_cfg, input_tokens, output_tokens)</code><div class="fn-desc">Calculates USD cost for a single request using the per-million-token rates from <code>config.py</code>.</div></li>
+      <li><code>run_eval(model_filter, question_filter, dry_run)</code><div class="fn-desc">Main loop. Iterates all questions &times; models, calls the API, saves results. Prints progress like <code>[14/54] Q05 &times; Qwen 3.5 9B ... OK (820ms, 412+187 tok, $0.0001)</code>. Adds 200ms courtesy delay between calls.</div></li>
+    </ul>
+
+    <h4>Prompt template</h4>
+    <p>The assembled user message follows this structure (matching production):</p>
+    <pre><code>&lt;LIVE_DATA untrusted="true"&gt;
+[{"resort": "Vail", "baseDepth": 54, ...}]
+&lt;/LIVE_DATA&gt;
+
+&lt;KNOWLEDGE untrusted="true"&gt;
+[1] Wolf Creek is known as Colorado's hidden gem...
+&lt;/KNOWLEDGE&gt;
+
+User question: What are current conditions at Vail?</code></pre>
+
+    <h4>Output</h4>
+    <p>Saves to <code>results/</code>:</p>
+    <ul>
+      <li><code>results/raw/TIMESTAMP_Q01_Llama-3.1-8B.json</code> &mdash; one file per call (54 total)</li>
+      <li><code>results/eval-TIMESTAMP.json</code> &mdash; combined file with all 54 results + summary</li>
+    </ul>
+  </div>
+</div>
+
+<hr>
+</section>
+
+<!-- ===== SECTION 7 ===== -->
+<section id="section-7">
+<h2>7. <code>scorer.py</code> &mdash; mechanical faithfulness &amp; signal checks</h2>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <div class="file-card-icon" style="background:#dc2626;">PY</div>
+    <div>
+      <div class="file-card-title">scorer.py</div>
+      <div class="file-card-sub">Phase 2 &mdash; auto-scores every response mechanically</div>
+    </div>
+    <a class="file-card-dl" href="eval/scorer.py" download title="Download scorer.py"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10"/></svg>View</a>
+  </div>
+  <div class="file-card-body">
+    <h4>What it does</h4>
+    <p>Runs three types of automated checks on each model response, generates a CSV template pre-filled with auto-scores (with blank columns for human scoring), and prints a summary with flagged issues.</p>
+
+    <h4>Key functions</h4>
+    <ul class="fn-list">
+      <li><code>extract_numbers(text)</code><div class="fn-desc">Regex-extracts all numeric values from a response. Returns a set of string representations (e.g. <code>{"54", "121", "6"}</code>).</div></li>
+      <li><code>check_faithfulness(response_text, allowed_values, ignore_set)</code>
+        <div class="fn-desc">The core faithfulness checker. Extracts numbers from the response, compares each against the <code>faithfulness_values</code> set from the question fixture, and classifies as <span class="verdict verdict-yes">verified</span>, <span class="verdict verdict-no">unverified</span>, or <span class="verdict verdict-gray">ignored</span>. Returns a ratio (verified / total checked). A ratio below 1.0 means the model cited a number not in the RAG context &mdash; a potential hallucination.</div>
+      </li>
+      <li><code>check_signals(response_text, fail_signals, pass_signals)</code>
+        <div class="fn-desc">Case-insensitive search for defined signal phrases. Returns <span class="verdict verdict-no">FAIL</span> if any fail signal is found, <span class="verdict verdict-yes">PASS</span> if pass signals are found (and no fail signals), <span class="verdict verdict-maybe">REVIEW</span> if neither match clearly, or <span class="verdict verdict-gray">N/A</span> if no signals were defined for that question.</div>
+      </li>
+      <li><code>score_result(result)</code><div class="fn-desc">Scores a single model &times; question result. Runs faithfulness + signal checks, computes word count, and returns a structured score object.</div></li>
+      <li><code>generate_csv(scores, output_path)</code><div class="fn-desc">Writes a CSV with auto-filled columns (faithfulness ratio, signal status, word count, latency, cost, response preview) and blank columns for human scoring (faithfulness 1&ndash;5, relevance 1&ndash;5, tone 1&ndash;5, guardrail pass/fail, notes).</div></li>
+      <li><code>print_summary(scores, verbose)</code><div class="fn-desc">Prints per-model aggregates (avg word count, avg latency, faithfulness %, signal pass/fail counts, total cost) and a list of flagged issues (unverified numbers, fail signals triggered).</div></li>
+    </ul>
+
+    <h4>Faithfulness example</h4>
+    <table>
+      <thead><tr><th>Scenario</th><th>Response excerpt</th><th>Allowed values</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Clean pass</td><td>"Vail has 54-inch base with 121 trails open"</td><td>[54, 121, 195, ...]</td><td><span class="verdict verdict-yes">100%</span> &mdash; all numbers verified</td></tr>
+        <tr><td>Hallucination caught</td><td>"Vail has 54-inch base with <strong>150</strong> trails open"</td><td>[54, 121, 195, ...]</td><td><span class="verdict verdict-no">50%</span> &mdash; "150" is unverified</td></tr>
+        <tr><td>Ignored numbers</td><td>"In 2026, Vail has 54-inch base"</td><td>[54, 121, ...]</td><td><span class="verdict verdict-yes">100%</span> &mdash; "2026" is in ignore set</td></tr>
+      </tbody>
+    </table>
+
+    <h4>CSV template output</h4>
+    <p>Designed to be opened in Google Sheets. Auto-filled columns let you see the automated analysis; you fill in the human scores by reading each response in the comparison HTML report.</p>
+    <table>
+      <thead><tr><th>Auto-filled</th><th>Human fills</th></tr></thead>
+      <tbody>
+        <tr><td>question_id, category, model, word_count, faithfulness_ratio, faithfulness_unverified, signal_status, latency_ms, cost_usd, response_preview</td><td>faithfulness_human (1&ndash;5), relevance_human (1&ndash;5), tone_human (1&ndash;5), guardrail_human (pass/fail), notes</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<hr>
+</section>
+
+<!-- ===== SECTION 8 ===== -->
+<section id="section-8">
+<h2>8. <code>report.py</code> &mdash; HTML comparison generator</h2>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <div class="file-card-icon" style="background:#7c3aed;">PY</div>
+    <div>
+      <div class="file-card-title">report.py</div>
+      <div class="file-card-sub">Phase 3 &mdash; visual side-by-side comparison report</div>
+    </div>
+    <a class="file-card-dl" href="eval/report.py" download title="Download report.py"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10"/></svg>View</a>
+  </div>
+  <div class="file-card-body">
+    <h4>What it does</h4>
+    <p>Reads the combined results JSON and generates a self-contained HTML file with all 18 questions displayed side-by-side across the 3 models. Each model response card shows the full text, auto-scores (faithfulness, signals), latency, cost, and flagged issues. The report is designed for stakeholder review &mdash; shareable and readable without technical context.</p>
+
+    <h4>Key functions</h4>
+    <ul class="fn-list">
+      <li><code>build_html(results, summary)</code>
+        <div class="fn-desc">The main generator. Groups results by question, renders them in Q01&ndash;Q18 order with category badges, expected behavior descriptions, and 3-column model cards. Calls <code>scorer.check_faithfulness()</code> and <code>scorer.check_signals()</code> inline to compute auto-scores for the visual display. Returns a complete HTML string with embedded CSS.</div>
+      </li>
+    </ul>
+
+    <h4>Report layout</h4>
+    <ul>
+      <li><strong>Header bar</strong> &mdash; timestamp, question &times; model count, total cost</li>
+      <li><strong>Summary cards</strong> &mdash; per-model cost and average latency</li>
+      <li><strong>Question sections</strong> &mdash; one per Q01&ndash;Q18, each with:
+        <ul>
+          <li>Category badge with weight percentage (e.g. <em>Narrative &amp; trip planning 25%</em>)</li>
+          <li>Expected behavior description and constraints</li>
+          <li>3 model response cards in a responsive grid with:
+            <ul>
+              <li>Full response text (scrollable at 300px max height)</li>
+              <li>Word count, latency, cost, token usage</li>
+              <li>Faithfulness percentage with color coding (green &ge; 90%, amber &ge; 70%, red &lt; 70%)</li>
+              <li>Signal status badge (PASS / FAIL / REVIEW)</li>
+              <li>Unverified numbers warning if any hallucinations detected</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+
+    <h4>Output</h4>
+    <p><code>results/eval-TIMESTAMP-comparison.html</code> &mdash; open in any browser. No server needed.</p>
+  </div>
+</div>
+
+<hr>
+</section>
+
+<!-- ===== SECTION 9 ===== -->
+<section id="section-9">
+<h2>9. Fixtures &mdash; the controlled inputs</h2>
+
+<div class="file-card">
+  <div class="file-card-header">
+    <div class="file-card-icon" style="background:#be123c;">FX</div>
+    <div>
+      <div class="file-card-title">fixtures/questions.json</div>
+      <div class="file-card-sub">18 questions + RAG context + expected behavior</div>
+    </div>
+    <a class="file-card-dl" href="eval/fixtures/questions.json" download title="Download questions.json"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10"/></svg>View</a>
+  </div>
+  <div class="file-card-body">
+    <h4>Structure</h4>
+    <p>Top-level object with <code>categories</code> (C1&ndash;C7 with names and weights) and a <code>questions</code> array. Each question object contains:</p>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>string</td><td>Stable identifier (<code>"Q01"</code>&ndash;<code>"Q18"</code>)</td></tr>
+        <tr><td><code>category</code></td><td>string</td><td>Category key (<code>"C1"</code>&ndash;<code>"C7"</code>)</td></tr>
+        <tr><td><code>question</code></td><td>string</td><td>The user's question &mdash; exactly as typed</td></tr>
+        <tr><td><code>context.live_data</code></td><td>array</td><td>Mock resort data objects (what Convex would return)</td></tr>
+        <tr><td><code>context.knowledge_chunks</code></td><td>array</td><td>Mock vector-retrieved prose paragraphs</td></tr>
+        <tr><td><code>context.news</code></td><td>array</td><td>Mock news article summaries</td></tr>
+        <tr><td><code>faithfulness_values</code></td><td>number[]</td><td>Every number the model is allowed to cite. Used by <code>scorer.py</code>.</td></tr>
+        <tr><td><code>expected_behavior</code></td><td>string</td><td>Human-readable description of what a good answer looks like</td></tr>
+        <tr><td><code>fail_signals</code></td><td>string[]</td><td>Phrases that indicate failure (e.g. <code>"Paris"</code> for injection Q17)</td></tr>
+        <tr><td><code>pass_signals</code></td><td>string[]</td><td>Phrases that indicate correct handling (e.g. <code>"snow conditions"</code>)</td></tr>
+        <tr><td><code>constraints</code></td><td>string[]</td><td>Named constraints for trip-planning questions (for display in report)</td></tr>
+        <tr><td><code>tags</code></td><td>string[]</td><td>Filterable labels (future use)</td></tr>
+      </tbody>
+    </table>
+
+    <h4>How to add a question</h4>
+    <ol>
+      <li>Pick the next ID (<code>"Q19"</code>)</li>
+      <li>Assign a category (<code>"C1"</code>&ndash;<code>"C7"</code>)</li>
+      <li>Write the question as a real user would phrase it</li>
+      <li>Build the context fixture &mdash; what data would the RAG pipeline retrieve for this question?</li>
+      <li>List every number in the fixture as <code>faithfulness_values</code></li>
+      <li>Define <code>fail_signals</code> / <code>pass_signals</code> for guardrail and edge-case questions</li>
+    </ol>
+  </div>
+</div>
+
+<div class="file-card" style="margin-top: 14px;">
+  <div class="file-card-header">
+    <div class="file-card-icon" style="background:#64748b;">FX</div>
+    <div>
+      <div class="file-card-title">fixtures/system_prompt.txt</div>
+      <div class="file-card-sub">Hardened system prompt &mdash; identical for all models</div>
+    </div>
+    <a class="file-card-dl" href="eval/fixtures/system_prompt.txt" download title="Download system_prompt.txt"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10"/></svg>View</a>
+  </div>
+  <div class="file-card-body">
+    <p>Plain text file. Contains the 8 rules from the production system prompt: faithfulness mandate, graceful degradation, topic boundaries, prompt concealment, conciseness target, tone guidance, data-driven comparisons, and multi-constraint acknowledgment.</p>
+    <p><strong>Keep this in sync with your production prompt.</strong> If you update the production system prompt in <code>rag-plan.md</code> or the Convex action, update this file to match.</p>
+  </div>
+</div>
+
+<hr>
+</section>
+
+<!-- ===== SECTION 10 ===== -->
+<section id="section-10">
+<h2>10. Output files &mdash; what gets generated</h2>
+
+<p>All output goes to <code>eval/results/</code>. Each run is timestamped so multiple runs don't overwrite each other.</p>
+
+<table>
+  <thead><tr><th>File</th><th>Created by</th><th>Format</th><th>What's in it</th><th>What you do with it</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>results/raw/*.json</code></td>
+      <td>runner.py</td>
+      <td>JSON (54 files)</td>
+      <td>One file per API call. Full request/response with system prompt length, user message, model output, token counts, latency, cost, plus the question's fixture data for self-contained debugging.</td>
+      <td>Deep-dive into a specific model &times; question. Rarely opened manually.</td>
+    </tr>
+    <tr>
+      <td><code>results/eval-TIMESTAMP.json</code></td>
+      <td>runner.py</td>
+      <td>JSON</td>
+      <td>Combined results from all 54 calls. Includes config metadata and cost summary. This is the canonical artifact &mdash; everything downstream reads from it.</td>
+      <td>Input to scorer.py and report.py. Archive for reproducibility.</td>
+    </tr>
+    <tr>
+      <td><code>results/eval-TIMESTAMP-scored.json</code></td>
+      <td>scorer.py</td>
+      <td>JSON</td>
+      <td>Auto-score results: faithfulness ratio, verified/unverified numbers, signal status per model &times; question.</td>
+      <td>Programmatic access to scores. Can be imported into notebooks or dashboards.</td>
+    </tr>
+    <tr>
+      <td><code>results/eval-TIMESTAMP-scores.csv</code></td>
+      <td>scorer.py</td>
+      <td>CSV</td>
+      <td>Spreadsheet template with auto-filled columns + blank human-score columns (faithfulness 1&ndash;5, relevance 1&ndash;5, tone 1&ndash;5, notes).</td>
+      <td><strong>Open in Google Sheets.</strong> Fill in human scores while reading the comparison HTML. This is your scoring worksheet.</td>
+    </tr>
+    <tr>
+      <td><code>results/eval-TIMESTAMP-comparison.html</code></td>
+      <td>report.py</td>
+      <td>HTML</td>
+      <td>Visual side-by-side comparison of all 3 models on all 18 questions. Category badges, auto-scores, flagged issues, full response text.</td>
+      <td><strong>Open in browser.</strong> The primary review artifact. Read each response, then fill in human scores in the CSV.</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr>
+</section>
+
+<!-- ===== SECTION 11 ===== -->
+<section id="section-11">
+<h2>11. Quick-start commands</h2>
+
+<h3>First-time setup</h3>
+
+<pre><code># No pip install needed — zero external dependencies
+cd eval/
+export TOGETHER_API_KEY=tok_your_key_here</code></pre>
+
+<h3>Full eval run (~$0.50, ~2 min)</h3>
+
+<pre><code>python3 run_eval.py</code></pre>
+
+<h3>Dry run (free &mdash; preview prompts)</h3>
+
+<pre><code>python3 run_eval.py --dry-run</code></pre>
+
+<h3>Test a single model first</h3>
+
+<pre><code># Test cheapest model first to verify API key works
+python3 run_eval.py --model 0 --question Q01</code></pre>
+
+<h3>Test a single question across all models</h3>
+
+<pre><code>python3 run_eval.py --question Q07</code></pre>
+
+<h3>Re-score existing results (free)</h3>
+
+<pre><code>python3 run_eval.py --score-only results/eval-20260608-201500.json</code></pre>
+
+<h3>Re-generate report (free)</h3>
+
+<pre><code>python3 run_eval.py --report-only results/eval-20260608-201500.json</code></pre>
+
+<h3>Verbose scoring (see per-question detail)</h3>
+
+<pre><code>python3 run_eval.py -v</code></pre>
+
+<h3>Run scorer directly</h3>
+
+<pre><code>python3 scorer.py results/eval-20260608-201500.json --verbose</code></pre>
+
+<h3>Run report generator directly</h3>
+
+<pre><code>python3 report.py results/eval-20260608-201500.json</code></pre>
+
+<hr>
+
+<div class="callout callout-rec">
+  <strong>Recommended first run:</strong> Start with <code>python3 run_eval.py --model 0 --question Q01</code> to verify your API key works and see the output format. Then run the full eval with <code>python3 run_eval.py</code>. Total cost for the full run: ~$0.50.
+</div>
+
+</section>
+
+<div class="footer">
+  Python Eval Script Reference &bull; POC-D &bull; SnoCountry AI Chat Concept &bull; June 2026
+</div>
+
+</main>
+</div>
+
+<script>
+(function(){
+  const cards=Array.from(document.querySelectorAll('.prompt-card'));
+  const targets=cards.map(c=>document.getElementById(c.dataset.target)).filter(Boolean);
+  const sidebar=document.getElementById('sidebar'),backdrop=document.getElementById('drawerBackdrop'),menuToggle=document.getElementById('menuToggle'),sidebarClose=document.getElementById('sidebarClose'),progressBar=document.getElementById('progressBar'),bookmarkList=document.getElementById('bookmarkList'),bookmarkEmpty=document.getElementById('bookmarkEmpty');
+  const STORAGE_KEY='eval-script-ref:bookmarks:v1';
+  const isMobile=()=>window.matchMedia('(max-width:1024px)').matches;
+  function openDrawer(){sidebar.classList.add('is-open');backdrop.classList.add('is-open');document.body.classList.add('no-scroll');if(menuToggle)menuToggle.setAttribute('aria-expanded','true');}
+  function closeDrawer(){sidebar.classList.remove('is-open');backdrop.classList.remove('is-open');document.body.classList.remove('no-scroll');if(menuToggle)menuToggle.setAttribute('aria-expanded','false');}
+  if(menuToggle)menuToggle.addEventListener('click',openDrawer);
+  if(sidebarClose)sidebarClose.addEventListener('click',closeDrawer);
+  if(backdrop)backdrop.addEventListener('click',closeDrawer);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sidebar.classList.contains('is-open'))closeDrawer();});
+  function smoothScrollTo(el){if(isMobile()){closeDrawer();setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),260);}else{el.scrollIntoView({behavior:'smooth',block:'start'});}}
+  cards.forEach(card=>{card.addEventListener('click',e=>{e.preventDefault();const el=document.getElementById(card.dataset.target);if(!el)return;smoothScrollTo(el);history.replaceState(null,'','#'+card.dataset.target);setActiveSection(card.dataset.target);});});
+  function setActiveSection(id){cards.forEach(c=>c.classList.toggle('active',c.dataset.target===id));}
+  if('IntersectionObserver' in window&&targets.length){const observer=new IntersectionObserver(entries=>{const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>a.boundingClientRect.top-b.boundingClientRect.top);if(visible.length)setActiveSection(visible[0].target.id);},{rootMargin:'-15% 0px -70% 0px',threshold:0});targets.forEach(t=>observer.observe(t));}
+  if(location.hash){const hashId=location.hash.replace('#','');if(cards.some(c=>c.dataset.target===hashId))setActiveSection(hashId);}else if(cards.length){setActiveSection(cards[0].dataset.target);}
+  function slugify(text){return(text||'').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-');}
+  function bookmarkIconSVG(filled){return'<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="'+(filled?'currentColor':'none')+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';}
+  const usedIds=new Set();document.querySelectorAll('[id]').forEach(el=>usedIds.add(el.id));
+  const headings=Array.from(document.querySelectorAll('main h2, main h3, main h4'));
+  headings.forEach(h=>{if(!h.id){let base='h-'+slugify(h.textContent||'');if(base==='h-')base='h-section';let id=base;let n=2;while(usedIds.has(id)){id=base+'-'+n;n++;}h.id=id;usedIds.add(id);}addBookmarkToggle(h);});
+  function addBookmarkToggle(h){if(h.querySelector('.bookmark-toggle'))return;const labelText=(h.textContent||'').replace(/\s+/g,' ').trim();const btn=document.createElement('button');btn.className='bookmark-toggle';btn.type='button';btn.setAttribute('aria-label','Toggle bookmark for '+labelText);btn.dataset.targetId=h.id;btn.dataset.label=labelText;btn.innerHTML=bookmarkIconSVG(false);btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleBookmark(h.id,labelText);});h.appendChild(btn);}
+  function loadBookmarks(){try{const raw=localStorage.getItem(STORAGE_KEY);const parsed=raw?JSON.parse(raw):[];return Array.isArray(parsed)?parsed:[];}catch(e){return[];}}
+  function saveBookmarks(arr){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(arr));}catch(e){}}
+  let bookmarks=loadBookmarks();
+  function isBookmarked(id){return bookmarks.some(b=>b.targetId===id);}
+  function toggleBookmark(id,label){if(isBookmarked(id)){bookmarks=bookmarks.filter(b=>b.targetId!==id);}else{bookmarks.push({targetId:id,label:label,addedAt:new Date().toISOString()});}saveBookmarks(bookmarks);renderBookmarks();}
+  let bookmarkObserver=null;
+  function renderBookmarks(){document.querySelectorAll('.bookmark-toggle').forEach(btn=>{const isOn=isBookmarked(btn.dataset.targetId);btn.classList.toggle('is-bookmarked',isOn);btn.innerHTML=bookmarkIconSVG(isOn);});if(!bookmarkList)return;bookmarkList.innerHTML='';if(bookmarks.length===0){if(bookmarkEmpty)bookmarkEmpty.style.display='block';}else{if(bookmarkEmpty)bookmarkEmpty.style.display='none';bookmarks.forEach(b=>{const card=document.createElement('a');card.className='bookmark-card';card.href='#'+b.targetId;card.dataset.target=b.targetId;card.title=b.label;card.innerHTML='<span class="bm-icon">'+bookmarkIconSVG(true)+'</span><span class="bm-label"></span><button class="bm-remove" type="button" aria-label="Remove bookmark">&times;</button>';card.querySelector('.bm-label').textContent=b.label;card.addEventListener('click',e=>{if(e.target.closest('.bm-remove')){e.preventDefault();e.stopPropagation();toggleBookmark(b.targetId,b.label);return;}e.preventDefault();const el=document.getElementById(b.targetId);if(!el)return;smoothScrollTo(el);history.replaceState(null,'','#'+b.targetId);});bookmarkList.appendChild(card);});}refreshBookmarkObserver();}
+  function refreshBookmarkObserver(){if(bookmarkObserver){bookmarkObserver.disconnect();bookmarkObserver=null;}if(!('IntersectionObserver' in window)||bookmarks.length===0)return;bookmarkObserver=new IntersectionObserver(entries=>{const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>a.boundingClientRect.top-b.boundingClientRect.top);if(visible.length){const id=visible[0].target.id;document.querySelectorAll('.bookmark-card').forEach(c=>{c.classList.toggle('active',c.dataset.target===id);});}},{rootMargin:'-15% 0px -70% 0px',threshold:0});bookmarks.forEach(b=>{const el=document.getElementById(b.targetId);if(el)bookmarkObserver.observe(el);});}
+  renderBookmarks();
+  let ticking=false;function updateProgress(){const doc=document.documentElement;const scrollTop=window.scrollY||doc.scrollTop;const scrollHeight=doc.scrollHeight-doc.clientHeight;const pct=scrollHeight>0?Math.min(100,Math.max(0,(scrollTop/scrollHeight)*100)):0;if(progressBar)progressBar.style.width=pct+'%';ticking=false;}function onScroll(){if(!ticking){window.requestAnimationFrame(updateProgress);ticking=true;}}window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',onScroll);updateProgress();
+})();
+</script>
+
+</body>
+</html>

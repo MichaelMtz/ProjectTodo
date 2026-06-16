@@ -1,0 +1,2153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnoCountry AI Assistant — Deployment Plan</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --panel: #ffffff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --accent: #0369a1;
+    --user-bg: #eef6ff;
+    --user-border: #93c5fd;
+    --assistant-bg: #ffffff;
+    --assistant-border: #e5e7eb;
+    --code-bg: #0f172a;
+    --code-ink: #e2e8f0;
+    --inline-code-bg: #eef2f7;
+    --inline-code-ink: #b91c1c;
+    --table-border: #e5e7eb;
+    --table-head: #f1f5f9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  header.page {
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    color: #fff;
+    padding: 28px 24px;
+  }
+  header.page h1 {
+    margin: 0 0 6px 0;
+    font-size: 1.6rem;
+    letter-spacing: -0.01em;
+    color: white;
+  }
+  header.page .meta {
+    opacity: 0.85;
+    font-size: 0.9rem;
+  }
+  main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+  }
+  main > section {
+    margin: 0 0 12px 0;
+  }
+  main > section:first-child > h2:first-child {
+    margin-top: 0;
+  }
+  h2 {
+    font-size: 1.25rem;
+    margin: 28px 0 10px;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 6px;
+  }
+  h3 {
+    font-size: 1.05rem;
+    margin: 20px 0 8px;
+  }
+  h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 14px 0 6px;
+    color: #334155;
+  }
+  p { margin: 10px 0; }
+  ul, ol { padding-left: 22px; margin: 10px 0; }
+  li { margin: 4px 0; }
+  hr {
+    border: none;
+    border-top: 1px dashed #cbd5e1;
+    margin: 22px 0;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 0.92rem;
+    background: #fff;
+  }
+  th, td {
+    border: 1px solid var(--table-border);
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--table-head);
+    font-weight: 600;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--inline-code-bg);
+    color: var(--inline-code-ink);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 14px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    margin: 12px 0;
+  }
+  pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+  }
+  blockquote {
+    border-left: 4px solid #cbd5e1;
+    margin: 12px 0;
+    padding: 4px 14px;
+    color: #475569;
+    background: #f8fafc;
+  }
+  /* Markdown task-list items: "- [ ] foo" / "- [x] foo" */
+  .task-list-item { list-style: none; }
+  .task-list-item input[type="checkbox"] {
+    margin-right: 8px;
+    transform: translateY(1px);
+  }
+
+  /* ---------- Layout with sidebar ---------- */
+  .layout {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 28px;
+    padding: 0 20px;
+  }
+  .layout > main {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 920px;
+    margin: 0;
+    padding: 24px 0 80px;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    flex: 0 0 300px;
+    position: sticky;
+    top: 16px;
+    align-self: flex-start;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    padding: 20px 0;
+  }
+  .sidebar-inner {
+    background: #f1f3f6;
+    border: 1px solid #e2e6ec;
+    border-radius: 12px;
+    padding: 14px 12px;
+  }
+  .sidebar-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #6b7280;
+    padding: 4px 8px 10px;
+  }
+  .prompt-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ---------- Section card (sidebar) ---------- */
+  .prompt-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #ffffff;
+    border: 1px solid #e2e6ec;
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.05s ease;
+  }
+  .prompt-card:hover {
+    border-color: #93c5fd;
+    background: #fafcff;
+  }
+  .prompt-card:active { transform: translateY(1px); }
+  .prompt-card .card-num {
+    flex: 0 0 28px;
+    height: 28px;
+    width: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: #eef2f7;
+    color: #94a3b8;
+    border: 1px solid #e2e6ec;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .prompt-card .card-body {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .prompt-card .card-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .prompt-card .card-sub {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .prompt-card.active {
+    border-color: #0369a1;
+    background: #eff6ff;
+    box-shadow: 0 0 0 1px #0369a1 inset;
+  }
+  .prompt-card.active .card-num {
+    background: #0369a1;
+    color: #ffffff;
+    border-color: #0369a1;
+  }
+  .prompt-card.active .card-title {
+    color: #0c4a6e;
+  }
+
+  /* Anchor offset so clicked sections aren't flush to viewport edge */
+  main > section[id^="section-"],
+  main h2,
+  main h3,
+  main h4 {
+    scroll-margin-top: 16px;
+  }
+
+  /* ---------- Bookmark toggle on headings ---------- */
+  main h2,
+  main h3,
+  main h4 {
+    position: relative;
+    padding-right: 36px;
+  }
+  .bookmark-toggle {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0;
+    opacity: 1;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+  .bookmark-toggle:hover { color: #0369a1; background: #eff6ff; }
+  .bookmark-toggle:focus { outline: 2px solid #93c5fd; outline-offset: 1px; }
+  .bookmark-toggle.is-bookmarked { color: #0369a1; }
+  .bookmark-toggle svg { display: block; }
+
+  /* ---------- Sidebar bookmarks section ---------- */
+  .bookmark-section {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e6ec;
+  }
+  .bookmark-empty {
+    font-size: 0.78rem;
+    color: #6b7280;
+    padding: 4px 8px 6px;
+    line-height: 1.4;
+  }
+  .bookmark-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bookmark-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #ffffff;
+    border: 1px solid #e2e6ec;
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 0.83rem;
+    line-height: 1.3;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+  .bookmark-card:hover {
+    border-color: #93c5fd;
+    background: #fafcff;
+  }
+  .bookmark-card.active {
+    border-color: #0369a1;
+    background: #eff6ff;
+    box-shadow: 0 0 0 1px #0369a1 inset;
+  }
+  .bookmark-card .bm-icon {
+    flex: 0 0 16px;
+    color: #0369a1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .bookmark-card .bm-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #1f2937;
+  }
+  .bookmark-card .bm-remove {
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .bookmark-card:hover .bm-remove,
+  .bookmark-card .bm-remove:focus { opacity: 1; }
+  .bookmark-card .bm-remove:hover { color: #b91c1c; background: #fee2e2; }
+
+  /* ---------- Reading progress bar ---------- */
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, #0369a1 0%, #38bdf8 100%);
+    z-index: 200;
+    transition: width 0.08s linear;
+    pointer-events: none;
+  }
+
+  /* ---------- Hamburger (mobile only) ---------- */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 120;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid #e2e6ec;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.15);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .menu-toggle:hover { background: #fafcff; border-color: #93c5fd; }
+  .menu-toggle .bars {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .menu-toggle .bars span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: #1f2937;
+    border-radius: 1px;
+  }
+
+  /* ---------- Drawer backdrop ---------- */
+  .drawer-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 110;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .drawer-backdrop.is-open {
+    display: block;
+    opacity: 1;
+  }
+
+  .sidebar-close {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #e2e6ec;
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 1;
+  }
+  .sidebar-close:hover { background: #f1f5f9; color: #1f2937; }
+
+  body.no-scroll { overflow: hidden; }
+
+  /* ---------- Responsive: sidebar becomes off-canvas drawer ---------- */
+  @media (max-width: 1024px) {
+    .layout { padding: 0; }
+    .layout > main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+    .menu-toggle { display: flex; }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 320px;
+      max-width: 85vw;
+      max-height: none;
+      z-index: 115;
+      background: #f1f3f6;
+      overflow-y: auto;
+      padding: 16px 12px;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      box-shadow: 2px 0 16px rgba(0, 0, 0, 0.12);
+    }
+    .sidebar.is-open { transform: translateX(0); }
+    .sidebar-inner {
+      background: transparent;
+      border: none;
+      padding: 36px 6px 6px;
+    }
+    .sidebar-close { display: flex; }
+  }
+
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 40px 0 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar" aria-hidden="true"></div>
+
+<button class="menu-toggle" id="menuToggle" type="button" aria-label="Open section menu" aria-controls="sidebar" aria-expanded="false">
+  <span class="bars"><span></span><span></span><span></span></span>
+</button>
+
+<div class="drawer-backdrop" id="drawerBackdrop" aria-hidden="true"></div>
+
+<header class="page">
+  <h1>SnoCountry AI Assistant — Deployment Plan</h1>
+  <div class="meta">POC through production launch and ongoing iteration • generated from <code>deployment-plan.md</code></div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar" id="sidebar" aria-label="Section navigation">
+    <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Close section menu">×</button>
+    <div class="sidebar-inner">
+      <div class="sidebar-title">Sections</div>
+      <nav class="prompt-list" id="promptList">
+        <a class="prompt-card" href="#section-1" data-target="section-1">
+          <div class="card-num">1</div>
+          <div class="card-body">
+            <div class="card-title">Executive summary</div>
+            <div class="card-sub">Phases, headcount, costs, gates</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-2" data-target="section-2">
+          <div class="card-num">2</div>
+          <div class="card-body">
+            <div class="card-title">POC (6 weeks)</div>
+            <div class="card-sub">Together AI baseline + fine-tune + portability</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-3" data-target="section-3">
+          <div class="card-num">3</div>
+          <div class="card-body">
+            <div class="card-title">Production build</div>
+            <div class="card-sub">Foundation → UI → stress test → soft launch</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-4" data-target="section-4">
+          <div class="card-num">4</div>
+          <div class="card-body">
+            <div class="card-title">Continual learning</div>
+            <div class="card-sub">Data collection, fine-tune cadence, A/B</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-5" data-target="section-5">
+          <div class="card-num">5</div>
+          <div class="card-body">
+            <div class="card-title">Monitoring &amp; operations</div>
+            <div class="card-sub">Dashboards, on-call, vendor risk</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-6" data-target="section-6">
+          <div class="card-num">6</div>
+          <div class="card-body">
+            <div class="card-title">Stress testing</div>
+            <div class="card-sub">Scenarios, what to learn, caching</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-7" data-target="section-7">
+          <div class="card-num">7</div>
+          <div class="card-body">
+            <div class="card-title">Things you might be missing</div>
+            <div class="card-sub">13 categories of easy-to-forget items</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-8" data-target="section-8">
+          <div class="card-num">8</div>
+          <div class="card-body">
+            <div class="card-title">Risk register</div>
+            <div class="card-sub">Likelihood, impact, mitigation, owner</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-9" data-target="section-9">
+          <div class="card-num">9</div>
+          <div class="card-body">
+            <div class="card-title">Cost model</div>
+            <div class="card-sub">Year-1 monthly + one-time</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-10" data-target="section-10">
+          <div class="card-num">10</div>
+          <div class="card-body">
+            <div class="card-title">Open decisions</div>
+            <div class="card-sub">12 calls to make before kickoff</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-11" data-target="section-11">
+          <div class="card-num">11</div>
+          <div class="card-body">
+            <div class="card-title">Hand-off summary</div>
+            <div class="card-sub">What to read next; companion docs</div>
+          </div>
+        </a>
+      </nav>
+
+      <section class="bookmark-section" aria-label="Bookmarks">
+        <div class="sidebar-title">Bookmarks</div>
+        <div class="bookmark-empty" id="bookmarkEmpty">
+          Click the bookmark icon next to any heading to save it here.
+        </div>
+        <nav class="bookmark-list" id="bookmarkList"></nav>
+      </section>
+    </div>
+  </aside>
+
+<main>
+
+<p>End-to-end plan from proof-of-concept through production launch and ongoing iteration. Pairs with <code>concepts/rag-plan.md</code> (architecture) and <code>concepts/rag-jailbreak-tests.md</code> (safety suite).</p>
+<p>This plan covers:</p>
+<ul>
+<li>A <strong>6-week proof of concept</strong> on Together AI (with and without fine-tuning, limited RAG, portability testing).</li>
+<li>A <strong>10–12-week production build</strong> with full RAG, guardrails, chat UI, entity-highlighting integration (resort cards, articles, sponsors), stress testing, and the API-vs-dedicated-hardware decision.</li>
+<li><strong>Ongoing operations</strong> — continual fine-tuning, monitoring, rollback, content review.</li>
+<li><strong>Items easy to forget</strong> — legal, partner relationships, accessibility, SEO, vendor risk, etc. Section 11.</li>
+</ul>
+<p>Total wall-clock: ~22 weeks from kickoff to public launch on canary pages, then iterate.</p>
+<hr>
+
+
+<section id="section-1">
+<h2>1. Executive summary</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Wall-clock</th>
+<th>Headcount</th>
+<th>Goal</th>
+<th>Cost ceiling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>POC</strong></td>
+<td>Weeks 1–6</td>
+<td>1 dev + 1 designer + ¼ PM</td>
+<td>Validate quality, latency, cost, portability with real SnoCountry data</td>
+<td>$500 cloud + 1 fine-tune</td>
+</tr>
+<tr>
+<td><strong>Production build</strong></td>
+<td>Weeks 7–18</td>
+<td>1 dev + 1 designer/FE + ¼ PM</td>
+<td>Full RAG, guardrails, chat UI, entity highlighting, partner integrations</td>
+<td>$800 cloud + ~$50 in fine-tunes</td>
+</tr>
+<tr>
+<td><strong>Stress + infra decision</strong></td>
+<td>Weeks 16–18 (overlaps prod)</td>
+<td>1 dev</td>
+<td>Load test API; if costs justify, validate dedicated-hardware path</td>
+<td>$200 (RunPod 1-week test)</td>
+</tr>
+<tr>
+<td><strong>Soft launch</strong></td>
+<td>Weeks 19–20</td>
+<td>full team + on-call rotation</td>
+<td>Canary on home page and 1–3 resort pages</td>
+<td>observed</td>
+</tr>
+<tr>
+<td><strong>Iterate / scale</strong></td>
+<td>Weeks 21+</td>
+<td>1 dev sustaining</td>
+<td>Continual learning, expand pages, partner widgets</td>
+<td>model-driven</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key gates</strong> (don't skip these):</p>
+<ol>
+<li><strong>End of Week 3</strong> — Stock-model RAG-only quality check. If 16/20 eval questions land at &quot;good&quot; or above, skip fine-tuning entirely for v1.</li>
+<li><strong>End of Week 6</strong> — POC verdict: ship to production build, pivot model/provider, or shelve.</li>
+<li><strong>End of Week 17</strong> — API-vs-dedicated hardware decision based on real traffic data.</li>
+<li><strong>End of Week 20</strong> — Public launch decision based on soft-launch metrics.</li>
+</ol>
+<hr>
+
+</section>
+
+<section id="section-2">
+<h2>2. Phase 0 — POC (6 weeks, Together AI)</h2>
+<h3>2.1 Objectives</h3>
+<p>The POC answers four binary questions:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Pass condition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q1</td>
+<td>Does a stock 70B model + light RAG produce acceptable answers for SnoCountry's use cases?</td>
+<td>≥ 80% rated &quot;good&quot; on 20-question eval set</td>
+</tr>
+<tr>
+<td>Q2</td>
+<td>Does fine-tuning meaningfully improve quality, tone, or cost?</td>
+<td>≥ 5 percentage-point quality bump OR ≥ 30% cost reduction by enabling 8B model swap</td>
+</tr>
+<tr>
+<td>Q3</td>
+<td>Is the fine-tuned LoRA portable from Together AI to RunPod?</td>
+<td>Same prompts produce comparable outputs on RunPod within ±5% quality</td>
+</tr>
+<tr>
+<td>Q4</td>
+<td>Is the cost-per-conversation acceptable?</td>
+<td>&lt; $0.01/turn at projected v1 traffic</td>
+</tr>
+</tbody>
+</table>
+<p>If Q1 passes, Q2 may not be necessary at all. The POC explicitly tests this — fine-tuning is <em>not</em> assumed.</p>
+<h3>2.2 Scope deliberately limited</h3>
+<p><strong>In POC:</strong></p>
+<ul>
+<li>Stock + fine-tuned Llama on Together AI</li>
+<li>~5 hand-authored resort overviews (Big Sky, Vail, A-Basin, Park City, Mammoth)</li>
+<li>Last 60 days of news articles in vector index</li>
+<li>Live data only via existing <code>/api/resort-data</code> (state/region not required yet)</li>
+<li>Minimal CLI + Postman-style chat client (no production UI)</li>
+<li>Single-layer guardrail (system prompt only)</li>
+<li>Tracking to a JSON log file (no Convex table yet)</li>
+</ul>
+<p><strong>NOT in POC:</strong></p>
+<ul>
+<li>Production chat widget</li>
+<li>Entity highlighting UI</li>
+<li>Full guardrails suite</li>
+<li>Continual learning pipeline</li>
+<li>Rate limiting or abuse defense</li>
+<li>Partner integrations</li>
+<li>Stress test / load test</li>
+<li>Marketing rollout</li>
+</ul>
+<p><strong>Reason for tight scope:</strong> to answer Q1–Q4 cheaply. Most of the production work is not contingent on POC outcomes.</p>
+<h3>2.3 Week-by-week</h3>
+<h4>Week 1 — Foundation &amp; corpus</h4>
+<table>
+<thead>
+<tr>
+<th>Day</th>
+<th>Task</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1–2</td>
+<td>Together AI account, <code>TOGETHER_API_KEY</code> in env, Convex dev deployment ready</td>
+<td>Working <code>curl</code> against <code>/v1/chat/completions</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Author 5 resort-overview markdown files (~250 words each)</td>
+<td><code>data/resort-overviews/308001-big-sky.md</code> etc.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Build <code>scripts/rag/index-articles.js</code> against last 60 days of articles</td>
+<td>~150 chunks indexed</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Build <code>scripts/rag/index-resorts.js</code> against the 5 overviews</td>
+<td>~10 chunks indexed</td>
+</tr>
+</tbody>
+</table>
+<h4>Week 2 — Stock-model RAG baseline</h4>
+<table>
+<thead>
+<tr>
+<th>Day</th>
+<th>Task</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1–2</td>
+<td>Build minimal <code>chat.js</code> CLI: question → retrieve → live data fetch → Together AI → print</td>
+<td>Local CLI</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Hard-code system prompt (loose, not yet hardened)</td>
+<td>Repo</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Author 20-question eval set covering U1–U4 use cases</td>
+<td><code>concepts/eval/poc-eval.json</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Run eval set against stock Llama-3.3-70B-Turbo; record latency, cost, manual quality score</td>
+<td>First metrics row</td>
+</tr>
+</tbody>
+</table>
+<h4>Week 3 — Iterate on retrieval &amp; prompt</h4>
+<table>
+<thead>
+<tr>
+<th>Day</th>
+<th>Task</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1–2</td>
+<td>Tune retrieval (top-K, filtering, chunk size); re-run eval</td>
+<td>Improvement curve</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Try Llama-3.1-8B-Turbo for cost comparison</td>
+<td>Side-by-side metrics</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Add basic guardrail (canonical system prompt v1)</td>
+<td>Updated eval</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Decision gate</strong>: if 70B + RAG ≥ 80% &quot;good&quot;, skip fine-tuning. Otherwise proceed.</td>
+<td>Memo to PM</td>
+</tr>
+</tbody>
+</table>
+<h4>Week 4 — Fine-tuning experiment</h4>
+<table>
+<thead>
+<tr>
+<th>Day</th>
+<th>Task</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Generate ~1500 synthetic training examples using Claude/GPT against POC corpus</td>
+<td><code>data/training/poc-v1.jsonl</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Manual review of 150 samples; remove low-quality ones</td>
+<td>Cleaned JSONL</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Together AI fine-tune (<code>--lora-r 16 --weight-decay 0.01 --n-epochs 3</code>) on Llama-3.1-8B</td>
+<td>Adapter ID</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Re-run eval set against fine-tuned 8B</td>
+<td>Comparison table</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Compare: stock 70B vs fine-tuned 8B vs stock 8B</td>
+<td>Decision artifact</td>
+</tr>
+</tbody>
+</table>
+<h4>Week 5 — Portability test</h4>
+<table>
+<thead>
+<tr>
+<th>Day</th>
+<th>Task</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Download LoRA adapter from Together AI; push to private HuggingFace repo</td>
+<td>HF URL</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Spin up RunPod H100 pod, mount network volume, install vLLM</td>
+<td>Live RunPod endpoint</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Run vLLM with <code>--enable-lora</code> and your adapter; verify endpoint works</td>
+<td>Curl-able URL</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Run same 20-question eval against RunPod endpoint</td>
+<td>Quality + perf comparison</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Tear down pod (save weights to network volume); document the runbook</td>
+<td><code>docs/portability-runbook.md</code></td>
+</tr>
+</tbody>
+</table>
+<h4>Week 6 — POC report &amp; decision</h4>
+<table>
+<thead>
+<tr>
+<th>Day</th>
+<th>Task</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Compile all metrics: quality, latency, cost, portability</td>
+<td>Spreadsheet</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Manual exploration of edge cases: jailbreak attempts (informal), bad questions, multi-turn</td>
+<td>Notes</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Cost projection: at expected traffic, what does each path cost monthly?</td>
+<td>Table</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Write POC report: Q1–Q4 answers, recommended path</td>
+<td><code>concepts/poc-report.md</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Stakeholder review meeting; go/no-go decision</td>
+<td>Decision memo</td>
+</tr>
+</tbody>
+</table>
+<h3>2.4 POC budget</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Together AI tokens (eval, exploration, ~3M tokens)</td>
+<td>~$60</td>
+</tr>
+<tr>
+<td>Together AI fine-tune (1 LoRA, ~2M training tokens)</td>
+<td>~$8</td>
+</tr>
+<tr>
+<td>Together AI dedicated endpoint trial (Week 4–5)</td>
+<td>~$50</td>
+</tr>
+<tr>
+<td>RunPod H100 (5 days × 24 hrs × $2.50)</td>
+<td>~$300</td>
+</tr>
+<tr>
+<td>HuggingFace private repo</td>
+<td>$0</td>
+</tr>
+<tr>
+<td>Embedding corpus (~3M tokens)</td>
+<td>~$60</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>~$478</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Round to <strong>$500 ceiling</strong>. If the POC blows past this, something is wrong.</p>
+<h3>2.5 POC success criteria (rubric)</h3>
+<p>The POC passes if <strong>all</strong> are true:</p>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> Q1: ≥ 16/20 eval questions rated &quot;good&quot; or &quot;excellent&quot; by manual review with stock 70B + RAG.</li>
+<li class="task-list-item"><input type="checkbox" disabled> Q2: Fine-tuning experiment ran end-to-end and produced a valid adapter; quality measured.</li>
+<li class="task-list-item"><input type="checkbox" disabled> Q3: Portability test ran end-to-end on RunPod; output quality within ±5% of Together AI hosted version.</li>
+<li class="task-list-item"><input type="checkbox" disabled> Q4: Cost-per-turn under $0.01 at the chosen path.</li>
+<li class="task-list-item"><input type="checkbox" disabled> Latency: p95 first-token &lt; 2 seconds on Together API for the chosen model.</li>
+<li class="task-list-item"><input type="checkbox" disabled> No critical hallucinations (invented snow numbers) on eval set.</li>
+<li class="task-list-item"><input type="checkbox" disabled> Team alignment: written go-decision from PM, eng lead, content lead.</li>
+</ul>
+<p>If any item fails, the production plan does not start. Either pivot (different model, different provider) or defer.</p>
+<hr>
+
+</section>
+
+<section id="section-3">
+<h2>3. Post-POC: production build (Weeks 7–18)</h2>
+<p>Four overlapping sub-phases. Built on top of the architecture spec in <code>concepts/rag-plan.md</code>.</p>
+<h3>3.1 Phase A — Foundation hardening (Weeks 7–10)</h3>
+<p>Goal: ship the architecture from <code>rag-plan.md</code> end-to-end at production quality, no public exposure yet.</p>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Workstream</th>
+<th>Detailed deliverables</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7</td>
+<td><strong>Endpoints + schema</strong></td>
+<td>Implement Convex schema (<code>knowledge_chunks</code>, <code>rag_requests</code>); deploy <code>/api/resort-data?format=compact</code>; build N1 (<code>/api/rag/resort-context</code>) end-to-end</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>Endpoints (continued)</strong></td>
+<td>Build N2, N3, N4 (region-context, recommend, search). Activate <code>/api/region-data?region=</code> per <code>api-endpoints.md</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>Chat orchestrator</strong></td>
+<td>Build N5 (<code>/api/rag/chat</code>) with intent classifier, token-budget enforcer, streaming SSE, all five guardrail layers</td>
+</tr>
+<tr>
+<td>10</td>
+<td><strong>Tracking + indexing</strong></td>
+<td>Build N6 (<code>/api/track/rag-request</code>); production indexing crons (articles + resort overviews); expand corpus to top 50 resorts</td>
+</tr>
+</tbody>
+</table>
+<p>Acceptance gate end of Week 10: every endpoint in <code>rag-plan.md</code> Section 5 returns the documented shape; jailbreak suite from <code>rag-jailbreak-tests.md</code> passes 100% on critical-severity tests.</p>
+<h3>3.2 Phase B — Chat UI + entity highlighting (Weeks 11–14)</h3>
+<p>This is where the user-visible product comes together. The chat panel itself is straightforward; the <strong>entity highlighting</strong> is the differentiating feature and gets the most attention.</p>
+<h4>3.2.1 Chat UI</h4>
+<p>Built as a vanilla-JS module that drops onto any njk page (your existing template stack). Three components:</p>
+<pre><code>src/assets/js/chat/
+  chat-widget.js           Main entry; mounts on body, manages state
+  chat-stream.js           SSE consumer
+  entity-panel.js          Side panel for highlighted entities
+  entity-cards/
+    resort-card.js         One per entity type
+    article-card.js
+    sponsor-card.js
+    event-card.js
+src/assets/css/
+  chat.css                 Standalone styles, prefixed `.sno-chat-`
+</code></pre>
+<p>UI states: collapsed FAB → expanded panel (left or bottom-sheet on mobile) → message thread with streamed assistant responses.</p>
+<h4>3.2.2 Entity highlighting — the architecture</h4>
+<p>The chat answer streams text on the left; on the right (or below on mobile), context cards appear as the LLM mentions resorts, articles, or sponsors. Example flow:</p>
+<pre><code>User: &quot;Tell me about Copper Mountain&quot;
+   ↓
+[chat panel] &quot;Copper Mountain in Summit County, Colorado is...&quot; (streaming)
+[entity panel — appears mid-stream]
+   ┌─────────────────────────────────┐
+   │ [resort card]                   │
+   │ Copper Mountain                 │
+   │ 4&quot; new / 87&quot; base / 23 lifts    │
+   │ → View resort                   │
+   ├─────────────────────────────────┤
+   │ [event card]                    │
+   │ Beach Party — Mar 22            │
+   │ → Tickets                       │
+   ├─────────────────────────────────┤
+   │ [article card]                  │
+   │ &quot;Copper's expanded backcountry&quot; │
+   │ → Read                          │
+   ├─────────────────────────────────┤
+   │ [sponsor card]                  │
+   │ Vail Resorts Epic Pass          │
+   │ (from /api/ads?resortId=303009) │
+   └─────────────────────────────────┘
+</code></pre>
+<p><strong>Two implementation strategies — pick by week 11:</strong></p>
+<p><strong>Strategy A: structured output from the LLM (recommended).</strong> The model emits JSON containing both prose and explicit entity references:</p>
+<pre><code class="language-json">{
+  &quot;answer&quot;: &quot;Copper Mountain in Summit County, Colorado is a mid-sized resort known for...&quot;,
+  &quot;entities&quot;: [
+    { &quot;type&quot;: &quot;resort&quot;, &quot;id&quot;: &quot;303009&quot;, &quot;name&quot;: &quot;Copper Mountain&quot;, &quot;salience&quot;: 0.95 },
+    { &quot;type&quot;: &quot;article&quot;, &quot;id&quot;: &quot;6512&quot;, &quot;salience&quot;: 0.6 }
+  ],
+  &quot;follow_up&quot;: &quot;Try asking: How are conditions there today?&quot;
+}
+</code></pre>
+<p>The orchestrator extracts <code>entities</code> and tells the frontend which cards to render. Entity data is hydrated from existing endpoints (<code>/api/resort-data</code>, news-list, <code>/api/ads</code>).</p>
+<p>Pros: deterministic, easy to track, handles ambiguity (model knows &quot;Copper&quot; means resortId 303009 because the retrieved overview tells it).</p>
+<p>Cons: schema must be enforced — Llama can drift from JSON formatting under load. Use Together's <code>response_format: { type: &quot;json_schema&quot; }</code> (when available on the model you choose) or post-validate with a schema parser.</p>
+<p><strong>Strategy B: post-process the response with NER + dictionary.</strong> Stream prose normally; run a regex/NER step over the streamed text to detect resort names and link them.</p>
+<p>Pros: simpler model output; no JSON parsing risk.</p>
+<p>Cons: ambiguity (two resorts named &quot;Eagle Point&quot;), latency (must wait for tokens to arrive), miss rate.</p>
+<p><strong>Recommendation: Strategy A.</strong> It's deterministic and matches how real partners (Bing Chat, Perplexity, Claude.ai with tools) do it. Strategy B as fallback if the model can't reliably emit valid JSON.</p>
+<h4>3.2.3 Sponsor / ads integration</h4>
+<p>You already have <code>/api/ads?region=</code> and <code>/api/ads?resortId=</code> on <code>affable-hummingbird-827.convex.site</code>. Reuse it.</p>
+<p>Trigger: after each chat response, the orchestrator extracts the dominant <code>resort</code> entity (highest salience) and calls <code>/api/ads?resortId={id}</code>. The first ad becomes a sponsor card in the entity panel. If no resort entity, fall back to <code>/api/ads?region={region}</code> from <code>document.body.dataset.snowreport</code>.</p>
+<p>Track via existing <code>/api/track/ad-impression</code> and <code>/api/track/ad-click</code> — already built. New <code>?source=chat</code> query param distinguishes chat impressions from organic.</p>
+<h4>3.2.4 Events integration</h4>
+<p>You don't have an events feed today. Decide between:</p>
+<ul>
+<li><strong>(a) Inline in resort overview markdown.</strong> Curated, slow-moving, manually updated weekly. Lowest cost; covers ~80% of value.</li>
+<li><strong>(b) New <code>/api/events?resortId=</code> endpoint</strong> sourced from a structured spreadsheet or partner CMS. Keeps events in real time. Higher cost (build + maintain).</li>
+<li><strong>(c) Scrape resort sites.</strong> Brittle. Skip.</li>
+</ul>
+<p>Recommendation: <strong>(a) for v1</strong>, plan <strong>(b) for v1.1</strong> if user feedback shows demand.</p>
+<h4>3.2.5 Week-by-week</h4>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>11</td>
+<td>Strategy decision (A vs B); chat widget skeleton + SSE consumer; first end-to-end &quot;answer streams to UI&quot;</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Resort card + article card; entity hydration from existing endpoints</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Sponsor card; integration with existing <code>/api/ads</code> and tracking; event card (Strategy (a) — inline content)</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Polish; a11y pass (keyboard nav, screen reader labels); mobile bottom-sheet UX; embed on canary page (e.g. <code>/snow-report/colorado/copper-mountain/</code>)</td>
+</tr>
+</tbody>
+</table>
+<h3>3.3 Phase C — Stress test + infra decision (Weeks 16–18)</h3>
+<p>Run in parallel with Phase B's last weeks.</p>
+<h4>3.3.1 Stress test plan</h4>
+<p>Tool: <strong>k6</strong> (preferred; JavaScript-native, easy CI integration). Alternatives: Artillery, Locust.</p>
+<p>Scripts in <code>scripts/stress/</code>:</p>
+<ul>
+<li><strong>Scenario 1: ramp</strong> — 0 → 100 concurrent users over 5 min, hold 10 min, ramp down. Measures saturation point.</li>
+<li><strong>Scenario 2: peak burst</strong> — 200 concurrent users for 90 seconds (Saturday-9am-during-storm pattern). Measures cold-path behavior.</li>
+<li><strong>Scenario 3: steady-state</strong> — 30 concurrent users for 30 min. Measures cost-per-hour and stability.</li>
+<li><strong>Scenario 4: single resort flood</strong> — 50 concurrent users all asking about Big Sky. Measures cache effectiveness and entity-card hydration under load.</li>
+</ul>
+<p>Metrics captured per scenario:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TTFT p95</td>
+<td>&lt; 1.5 s</td>
+</tr>
+<tr>
+<td>Tokens/sec/user</td>
+<td>&gt; 15</td>
+</tr>
+<tr>
+<td>Error rate</td>
+<td>&lt; 1%</td>
+</tr>
+<tr>
+<td>Total cost during run</td>
+<td>within projected $/conversation</td>
+</tr>
+<tr>
+<td>Convex action latency p95</td>
+<td>&lt; 200 ms (excluding LLM)</td>
+</tr>
+<tr>
+<td>Vector search p95</td>
+<td>&lt; 80 ms</td>
+</tr>
+</tbody>
+</table>
+<p>Run on <strong>two paths in parallel</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Setup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>API</strong></td>
+<td>Together AI hosted endpoint (whichever model the POC selected)</td>
+</tr>
+<tr>
+<td><strong>Dedicated</strong></td>
+<td>RunPod H100 pod with vLLM, your fine-tuned LoRA loaded</td>
+</tr>
+</tbody>
+</table>
+<h4>3.3.2 Decision: API vs dedicated hardware</h4>
+<p>After stress testing, project monthly cost at expected traffic:</p>
+<pre><code>Monthly cost (API)        = (turns/month) × ($/turn)
+Monthly cost (dedicated)  = ($/hour × 24 × 30) + (cost of idle margin)
+</code></pre>
+<p>Break-even is roughly 5–10M tokens/day of sustained traffic. Below that, API wins on simplicity and elasticity. Above that, dedicated wins on cost and latency.</p>
+<table>
+<thead>
+<tr>
+<th>Decision input</th>
+<th>API path</th>
+<th>Dedicated path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Predicted traffic</td>
+<td>&lt; 30k turns/day</td>
+<td>&gt; 30k turns/day</td>
+</tr>
+<tr>
+<td>Latency sensitivity</td>
+<td>normal</td>
+<td>very low TTFT required</td>
+</tr>
+<tr>
+<td>Ops appetite</td>
+<td>low</td>
+<td>medium</td>
+</tr>
+<tr>
+<td>Capex / cost predictability</td>
+<td>variable</td>
+<td>fixed monthly</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Default: stay on API for v1.</strong> Revisit at 90 days post-launch with real traffic.</p>
+<p>If dedicated wins, plan for:</p>
+<ul>
+<li>Hot-spare pod (auto-failover via Caddy/Nginx in front of two RunPod regions).</li>
+<li>Network volume for weights so pods are stateless.</li>
+<li>Health checks + auto-restart.</li>
+<li>Separate model-serving Convex action that proxies to the dedicated endpoint.</li>
+<li>Doubled runbook for incident response.</li>
+</ul>
+<h3>3.4 Phase D — Soft launch (Weeks 19–20)</h3>
+<p>Soft launch is <strong>not</strong> a feature freeze. It's a capacity ramp.</p>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>19, day 1</td>
+<td>Deploy to 1 canary page: <code>/snow-report/colorado/copper-mountain/</code>. Internal team only. Slack alert on every error. Daily review of all <code>rag_requests</code> rows.</td>
+</tr>
+<tr>
+<td>19, day 2–3</td>
+<td>Open canary to 10% of organic traffic (cookie-flagged). Monitor cost, latency, blocked-rate.</td>
+</tr>
+<tr>
+<td>19, day 4–5</td>
+<td>If healthy, expand to 100% of canary page.</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Add 2 more canary pages (varying traffic profiles: high-volume resort, niche resort, region page).</td>
+</tr>
+<tr>
+<td>20, end</td>
+<td>Public launch decision.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rollback plan</strong>: feature flag (<code>window.__SNO_CHAT_ENABLED</code>) lets ops disable the widget instantly without a deploy. Document and rehearse this in week 18.</p>
+<hr>
+
+</section>
+
+<section id="section-4">
+<h2>4. Continual learning pipeline</h2>
+<p>Once the chat is in production, the most valuable asset is <strong>real conversations + feedback</strong>. This pipeline turns those into model improvements over time.</p>
+<h3>4.1 Data collection</h3>
+<p>In every chat turn, include:</p>
+<ul>
+<li>Thumbs up / down inline (one click, anonymous).</li>
+<li>&quot;Was this helpful?&quot; follow-up after 3+ turns in a session.</li>
+<li>Implicit signals: did the user click the entity cards? Did they leave or keep chatting? Did they bookmark?</li>
+</ul>
+<p>Store these in <code>rag_requests</code> as <code>feedback: &quot;positive&quot; | &quot;negative&quot; | null</code> and <code>feedbackAt</code>.</p>
+<h3>4.2 Continual fine-tuning cadence</h3>
+<table>
+<thead>
+<tr>
+<th>Frequency</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Daily</td>
+<td>Append last 24 hours of <code>feedback=&quot;positive&quot;</code> rows to a candidate dataset</td>
+</tr>
+<tr>
+<td>Weekly</td>
+<td>Manual review (~30 min): dedupe, redact PII, fix obvious errors, drop low-quality</td>
+</tr>
+<tr>
+<td>Monthly</td>
+<td>If ≥ 500 reviewed examples accumulated, run a <strong>continual</strong> LoRA fine-tune that builds on the current adapter</td>
+</tr>
+<tr>
+<td>Quarterly</td>
+<td>Full re-train from scratch; compare to continually-tuned version on eval set</td>
+</tr>
+</tbody>
+</table>
+<p>The &quot;continual&quot; approach (LoRA stacking, basically) avoids catastrophic forgetting. Together AI supports it; document the version history in <code>concepts/model-versions.md</code>.</p>
+<h3>4.3 Versioning</h3>
+<pre><code>snocountry-chat-v1.0   = stock Llama-3.3-70B-Turbo + RAG only (POC outcome)
+snocountry-chat-v1.1   = + first LoRA from initial training set
+snocountry-chat-v1.2   = + 1 month of curated feedback
+snocountry-chat-v2.0   = full retrain on accumulated dataset
+</code></pre>
+<p>Always keep the previous version deployable for instant rollback.</p>
+<h3>4.4 Shadow / A/B deploy</h3>
+<p>When promoting v1.x → v1.x+1:</p>
+<ol>
+<li>Route 5% of traffic to the new version (<code>?model=v1.2</code> flag in chat endpoint).</li>
+<li>Compare metrics for 1 week: feedback rate, blocked rate, latency, cost.</li>
+<li>If new version is non-worse on all, ramp to 50% → 100% over 3 days.</li>
+<li>Decommission old version.</li>
+</ol>
+<p>Track all of this in <code>rag_requests.model</code> field already in the schema.</p>
+<hr>
+
+</section>
+
+<section id="section-5">
+<h2>5. Monitoring &amp; operations</h2>
+<h3>5.1 Dashboards (Convex + simple)</h3>
+<p>Build at the end of Phase A. Keep them minimal:</p>
+<table>
+<thead>
+<tr>
+<th>Panel</th>
+<th>Source</th>
+<th>Alarm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Turns / minute</td>
+<td><code>rag_requests</code> count</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td>Error rate</td>
+<td><code>rag_requests</code> where <code>status=&quot;error&quot;</code></td>
+<td>&gt; 2% over 1 hour</td>
+</tr>
+<tr>
+<td>Block rate</td>
+<td><code>status=&quot;blocked&quot;</code></td>
+<td>&gt; 15% over 1 hour (signal of attack)</td>
+</tr>
+<tr>
+<td>p95 TTFT</td>
+<td>client-reported</td>
+<td>&gt; 2.5 s</td>
+</tr>
+<tr>
+<td>p95 total latency</td>
+<td>server-side</td>
+<td>&gt; 6 s</td>
+</tr>
+<tr>
+<td>Daily cost</td>
+<td>sum of <code>costUsd</code></td>
+<td>&gt; daily budget × 1.5</td>
+</tr>
+<tr>
+<td>Faithfulness fail rate</td>
+<td><code>blockReason=&quot;unfaithful_*&quot;</code></td>
+<td>&gt; 1% over 1 day</td>
+</tr>
+<tr>
+<td>Retrieval coverage</td>
+<td>rows with <code>retrievedSources.length=0</code></td>
+<td>&gt; 5% over 1 day (corpus gap)</td>
+</tr>
+</tbody>
+</table>
+<h3>5.2 On-call</h3>
+<p>For v1, pragmatic posture:</p>
+<ul>
+<li>One named engineer holds the pager (or its equivalent — Slack alerts to a dedicated channel).</li>
+<li>Two alarm tiers:
+<ul>
+<li><strong>P1</strong>: cost runaway, error rate &gt; 5%, or chat completely down → reach within 15 min.</li>
+<li><strong>P2</strong>: degraded latency, isolated bug, blocked-rate spike → next business day.</li>
+</ul>
+</li>
+<li>Runbooks in <code>docs/runbooks/</code>: &quot;rate-limit a session&quot;, &quot;rollback to previous model version&quot;, &quot;kill the widget&quot;, &quot;rotate Together AI key&quot;.</li>
+</ul>
+<h3>5.3 Cost monitoring</h3>
+<p>Convex cron sums daily <code>costUsd</code>. If daily total exceeds <strong>$X</strong> (set in week 17 based on observed POC + soft-launch numbers):</p>
+<ul>
+<li>Slack alert.</li>
+<li>If 2 days in a row: auto-flip a feature flag to require auth or to apply stricter rate limits.</li>
+</ul>
+<h3>5.4 Vendor risk / failover</h3>
+<p>Together AI is a single point of failure. Mitigations:</p>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Together AI outage (hours)</td>
+<td>The whole <code>together.ts</code> client is one file; abstract to a <code>LLMProvider</code> interface; switch to OpenAI / Fireworks fallback via env var. Plan but don't pre-build.</td>
+</tr>
+<tr>
+<td>Together AI deprecates a model</td>
+<td>Pin model version in env; subscribe to their changelog.</td>
+</tr>
+<tr>
+<td>Together AI raises prices</td>
+<td>Quarterly cost review; revisit dedicated-hardware path.</td>
+</tr>
+<tr>
+<td>Convex outage</td>
+<td>Static fallback page on resort pages; chat widget shows &quot;temporarily unavailable&quot; gracefully; existing site continues to work.</td>
+</tr>
+<tr>
+<td>Embedding model deprecated</td>
+<td><code>embeddingVersion</code> field already in schema; re-index is a known-cost operation.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+
+</section>
+
+<section id="section-6">
+<h2>6. Stress testing — the deeper picture</h2>
+<p>(Phase C above is the timeline. This section is the methodology.)</p>
+<h3>6.1 Synthetic question pool</h3>
+<p>Don't hammer with one question. Use a 200-question pool sampled across:</p>
+<ul>
+<li>Use cases U1–U4 in equal proportion.</li>
+<li>Resort coverage matching real traffic distribution (e.g., 30% Colorado, 15% Utah, etc.).</li>
+<li>Question lengths: 30%, 30%, 30%, 10% across short / medium / long / pathological-long.</li>
+<li>5% jailbreak attempts to verify guardrails hold under load.</li>
+</ul>
+<h3>6.2 What to learn from each scenario</h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Question it answers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ramp</td>
+<td>At what concurrency does p95 TTFT cross 2 s? That's your &quot;soft cap.&quot;</td>
+</tr>
+<tr>
+<td>Peak burst</td>
+<td>Does the system fail open (queue) or fail closed (5xx)? Closed is preferable to a 30-second-spinner.</td>
+</tr>
+<tr>
+<td>Steady-state</td>
+<td>What is the actual $/hour cost at sustained-real load?</td>
+</tr>
+<tr>
+<td>Single resort flood</td>
+<td>Does retrieval cache help? If not, build one. (Add a 5-min cache on <code>/api/rag/resort-context</code> keyed by <code>resortId</code>.)</td>
+</tr>
+</tbody>
+</table>
+<h3>6.3 Caching layer (likely insertion point)</h3>
+<p>Before stress test, decide whether to add a Convex-level cache for <code>resort-context</code> and <code>region-context</code>. Recommended:</p>
+<ul>
+<li>TTL: 60 seconds for live-data-bearing endpoints.</li>
+<li>TTL: 600 seconds for vector-search results (questions cluster).</li>
+<li>Cache key: hash of <code>(endpoint, resortId|region, queryTextNormalized)</code>.</li>
+<li>Bypass on <code>cache=skip</code> query param for testing.</li>
+</ul>
+<p>Probably halves your steady-state cost at modest hit rates.</p>
+<hr>
+
+</section>
+
+<section id="section-7">
+<h2>7. Things you might be missing</h2>
+<p>These are easy to forget but bite later. Treat each as a checkbox during Phase A or Phase B.</p>
+<h3>7.1 Legal / compliance</h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Terms of Service update.</strong> The chat is a new product surface. ToS should disclose AI assistance, no warranty on conditions, no medical/legal/financial advice.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Privacy policy update.</strong> You're now logging questions. Disclose retention (90 days), what's logged, how to request deletion.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>GDPR / CCPA compliance.</strong> A &quot;Forget my chat data&quot; endpoint that wipes <code>rag_requests</code> for a <code>sessionId</code>. EU/CA visitors must see a consent banner before chat enables.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Resort data licensing.</strong> Some resorts may license conditions data with restrictions on derivative use. Verify before passing snow numbers through an AI.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>News article licensing.</strong> Check that indexing your own articles for an AI is permitted by any photo-licensing or syndication agreements in the article bodies.</li>
+</ul>
+<h3>7.2 Partner / content relationships</h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Resort partner notification.</strong> Tell the top ~30 resort partners: &quot;we're launching an AI chat on snocountry.com that may answer questions about your resort.&quot; Offer to show drafts. They will appreciate it (and find issues you missed).</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Sponsor disclosure.</strong> Sponsor cards in the entity panel must be visually distinct (&quot;Sponsored&quot;) and tracked separately. Existing <code>/api/track/ad-impression</code> already separates them; mirror for chat.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Press / launch comms.</strong> Plan a soft-launch blog post that frames the AI chat correctly: &quot;your snow-report assistant,&quot; not &quot;AI that knows everything.&quot;</li>
+</ul>
+<h3>7.3 Brand &amp; content review</h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Tone calibration.</strong> Have your content lead manually review 100 chat responses before launch. Bot tone vs SnoCountry editorial tone is rarely a perfect match out of the gate.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Forbidden topics list (beyond off-topic).</strong> Even within skiing: avoid medical advice (&quot;can I ski with a knee injury?&quot;), avalanche safety advice (legal liability), gambling on snow forecasts. Add to the system prompt's DO NOT list.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Refusal copy review.</strong> The canned refusal message will be seen thousands of times. Workshop it.</li>
+</ul>
+<h3>7.4 SEO</h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Don't expose chat conversations in HTML.</strong> Chat is client-rendered; conversations should not be in the static HTML emitted by Eleventy. Check that the canary page's rendered HTML does not contain user questions or AI responses (Google would index them, then complain).</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Schema.org markup.</strong> If you add an FAQ-style summary block alongside the chat, mark it up properly. The chat itself is not crawlable and that's fine.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Sitemap unchanged.</strong> No new URLs from chat.</li>
+</ul>
+<h3>7.5 Accessibility (a11y)</h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Keyboard navigation.</strong> Tab into the chat panel; arrow-key through entity cards; Esc to close.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Screen reader labels.</strong> <code>aria-live=&quot;polite&quot;</code> on the response region so SR users hear streamed tokens. Entity panel marked as <code>&lt;aside aria-label=&quot;Mentioned in this answer&quot;&gt;</code>.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Color contrast.</strong> Especially on the streaming-token cursor and the sponsor &quot;Sponsored&quot; label.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Reduced motion.</strong> Respect <code>prefers-reduced-motion</code> for typing animations.</li>
+</ul>
+<h3>7.6 Observability</h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Frontend errors.</strong> Wire Sentry (or equivalent) to catch chat-widget JS errors. Many users will hit subtle UA-specific bugs you won't reproduce.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Streaming health.</strong> Some networks/middleboxes mangle SSE. Detect and fall back to non-streaming. Log <code>streaming_failed</code> events.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Per-page chat usage.</strong> Add a tag to <code>rag_requests</code> for which page the widget was launched from (<code>pageSource</code> field already in schema). Top-pages report = clear product input.</li>
+</ul>
+<h3>7.7 Personalization (defer, but design for it)</h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Geolocation hint.</strong> Browser geolocation lets the model say &quot;you're in Denver — try A-Basin.&quot; Opt-in, sessionStorage only, never logged.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Bookmarks integration.</strong> The page already has the bookmarks feature in the saved doc. The same pattern can apply: &quot;Resorts you've bookmarked&quot; in the chat suggestions.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Logged-in users.</strong> When SnoCountry adds accounts, persist chat history server-side. Plan the table now, build it later.</li>
+</ul>
+<h3>7.8 Multi-language</h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>English-only for v1.</strong> Document this in user-facing copy.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Spanish/French planned.</strong> Together AI's Llama 3.3 supports both reasonably; main work is the system prompt + classifier. Plan as v1.5.</li>
+</ul>
+<h3>7.9 Mobile UX</h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Bottom-sheet pattern</strong> instead of side panel — the entity cards stack below the chat thread.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Voice input.</strong> <code>webkitSpeechRecognition</code> is widely supported; add a mic icon. Big UX win, low effort.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Tap-to-fold cards</strong> so entity panel doesn't dominate the screen.</li>
+</ul>
+<h3>7.10 Embeddable widget for partners</h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Resort partners may want this on their own site.</strong> v1.5 deliverable: a <code>&lt;script&gt;</code> snippet that mounts the chat against the SnoCountry endpoint with a <code>partnerId</code> parameter for tracking + ad attribution. Reuses the existing <code>widget.js</code> pattern.</li>
+</ul>
+<h3>7.11 Internal tooling</h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>&quot;Chat replay&quot; admin tool.</strong> Given a <code>requestId</code>, show the full prompt sent, retrieved sources, response, all metrics. Indispensable for debugging user reports. ~½ day to build.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Corpus health dashboard.</strong> Last-indexed timestamp per source; chunk counts by source; flagged-by-sanitizer queue. ~½ day.</li>
+</ul>
+<h3>7.12 Disaster recovery</h3>
+<ul>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Backups.</strong> Convex tables — use Convex's built-in snapshot feature; weekly export to S3/R2.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Resort-overview source files.</strong> They live in the repo (<code>data/resort-overviews/</code>); git is the backup.</li>
+<li class="task-list-item"><input type="checkbox" disabled> <strong>Fine-tune adapters.</strong> Stored on HuggingFace private repo + local mirror. Two copies, two providers.</li>
+</ul>
+<h3>7.13 Internal LLM gateway (post-v1)</h3>
+<p>When you have 2+ surfaces using LLMs (chat + maybe a &quot;summarize this resort&quot; feature for editors), centralize:</p>
+<ul>
+<li>Single <code>LLMProvider</code> abstraction.</li>
+<li>Single Together AI key with rate limit + cost ceiling per surface.</li>
+<li>Single retry/backoff/circuit-breaker policy.</li>
+<li>Single token-counting middleware.</li>
+</ul>
+<p>A small <code>convex/lib/llm.ts</code> module. ~1 dev-week to build properly.</p>
+<hr>
+
+</section>
+
+<section id="section-8">
+<h2>8. Risk register</h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Likelihood</th>
+<th>Impact</th>
+<th>Mitigation</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POC fails Q1 (quality not good enough)</td>
+<td>Low</td>
+<td>High</td>
+<td>Pivot model: try Qwen-2.5-72B or Claude via API. Add 1 week to POC.</td>
+<td>Eng lead</td>
+</tr>
+<tr>
+<td>Fine-tuning doesn't help</td>
+<td>Medium</td>
+<td>Low</td>
+<td>OK — keep stock 70B. Re-evaluate at 6 months with more training data.</td>
+<td>Eng lead</td>
+</tr>
+<tr>
+<td>Together AI service degrades during prod</td>
+<td>Low</td>
+<td>High</td>
+<td>Provider abstraction; failover plan in Section 5.4.</td>
+<td>Eng lead</td>
+</tr>
+<tr>
+<td>Chat answers an off-topic question publicly</td>
+<td>Medium</td>
+<td>High (brand)</td>
+<td>Five-layer guardrails; jailbreak suite gating; post-launch monitoring.</td>
+<td>Eng + Content</td>
+</tr>
+<tr>
+<td>Cost runaway from a viral moment</td>
+<td>Low</td>
+<td>Medium</td>
+<td>Cost alarm; auto-flip stricter rate limits; max-tokens cap.</td>
+<td>Eng</td>
+</tr>
+<tr>
+<td>Resort partner objects to AI representation</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Pre-launch outreach (Section 7.2); rapid response process.</td>
+<td>PM + Content</td>
+</tr>
+<tr>
+<td>User submits PII in chat</td>
+<td>High</td>
+<td>Medium</td>
+<td>PII redactor before storage (v1.1); 90-day retention; deletion endpoint.</td>
+<td>Eng</td>
+</tr>
+<tr>
+<td>Indirect prompt injection via own articles</td>
+<td>Low</td>
+<td>High</td>
+<td>Sanitizer at index time; fenced delimiters at runtime; jailbreak suite J012–J014.</td>
+<td>Eng</td>
+</tr>
+<tr>
+<td>Ad attribution for chat-driven revenue is wrong</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Add <code>?source=chat</code> to ad endpoints; reconcile in analytics.</td>
+<td>Eng + Sales</td>
+</tr>
+<tr>
+<td>Feature flag fails open during incident</td>
+<td>Low</td>
+<td>High</td>
+<td>Test the rollback in week 18. Quarterly fire drill.</td>
+<td>Eng</td>
+</tr>
+</tbody>
+</table>
+<hr>
+
+</section>
+
+<section id="section-9">
+<h2>9. Cost model (post-POC)</h2>
+<p>Assumes the API path. Numbers conservative.</p>
+<h3>9.1 Year-1 monthly run rate</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Low traffic (5k turns/mo)</th>
+<th>Mid (50k turns/mo)</th>
+<th>High (250k turns/mo)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Together AI inference</td>
+<td>$15</td>
+<td>$150</td>
+<td>$750</td>
+</tr>
+<tr>
+<td>Together AI embeddings (corpus refresh)</td>
+<td>$1</td>
+<td>$5</td>
+<td>$20</td>
+</tr>
+<tr>
+<td>Convex usage</td>
+<td>$0</td>
+<td>$25</td>
+<td>$100</td>
+</tr>
+<tr>
+<td>Continual fine-tuning</td>
+<td>$0–$50</td>
+<td>$50</td>
+<td>$50</td>
+</tr>
+<tr>
+<td>Engineering sustaining (½ FTE)</td>
+<td>included</td>
+<td>included</td>
+<td>included</td>
+</tr>
+<tr>
+<td><strong>Monthly total (cloud only)</strong></td>
+<td><strong>~$20</strong></td>
+<td><strong>~$230</strong></td>
+<td><strong>~$920</strong></td>
+</tr>
+</tbody>
+</table>
+<p>At 250k turns/month sustained, dedicated hardware breaks even with API. Re-test then.</p>
+<h3>9.2 One-time</h3>
+<ul>
+<li>POC: ~$500 (Section 2.4)</li>
+<li>Production build labor: ~12 dev-weeks at internal rate</li>
+<li>Initial corpus build (50 resort overviews): ~80 hours of content authoring</li>
+<li>Legal review (ToS / privacy update): ~$2000 outside counsel or in-house equivalent</li>
+<li>Brand/UX design pass: ~2 designer-weeks</li>
+</ul>
+<hr>
+
+</section>
+
+<section id="section-10">
+<h2>10. Open decisions</h2>
+<p>Resolve before Phase A starts. Some carry over from <code>concepts/rag-plan.md</code> Section 16.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Decision</th>
+<th>Default</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Convex deployment placement (RAG on <code>good-cormorant-17</code> vs new)</td>
+<td>Co-locate</td>
+<td>Eng lead</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Chat orchestration (Convex action vs Netlify proxy)</td>
+<td>Convex direct</td>
+<td>Eng lead</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Streaming protocol (SSE vs WS)</td>
+<td>SSE</td>
+<td>Eng lead</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Resort overview source (hand-write 50 + LLM-draft rest, or defer narrative)</td>
+<td>Hand-write 50, LLM-draft rest, human-review</td>
+<td>Content lead</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Primary model (Llama-3.3-70B vs Qwen-2.5-72B vs fine-tuned 8B)</td>
+<td>Decide at POC end (Week 6)</td>
+<td>Eng + PM</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Public for v1 vs auth-only</td>
+<td>Public, hCaptcha-on-abuse</td>
+<td>PM</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Privacy: log raw question vs redact at write</td>
+<td>Log v1, redactor v1.1</td>
+<td>PM + Legal</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Entity-highlighting strategy (A: structured output vs B: post-process NER)</td>
+<td>A — structured output</td>
+<td>Eng lead</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Events feed source</td>
+<td>(a) Inline in resort overviews for v1</td>
+<td>Content lead</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Languages supported</td>
+<td>English only v1</td>
+<td>PM</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Mobile UX (bottom sheet vs side panel)</td>
+<td>Bottom sheet</td>
+<td>Designer</td>
+</tr>
+<tr>
+<td>12</td>
+<td>API vs dedicated hardware</td>
+<td>Stay on API for v1; revisit at 90 days</td>
+<td>Eng + Finance</td>
+</tr>
+</tbody>
+</table>
+<hr>
+
+</section>
+
+<section id="section-11">
+<h2>11. Hand-off summary</h2>
+<p>When this plan is acted on:</p>
+<ol>
+<li>POC is owned by 1 engineer for 6 weeks against this document.</li>
+<li>Production build picks up at Week 7, on Phase A in <code>rag-plan.md</code>'s phase list.</li>
+<li>UI development picks up at Week 11 with the entity-highlighting decision (Open Decision #8).</li>
+<li>Soft launch is gated by stress-test results and the public-launch criteria in Section 3.4.</li>
+<li>Continual learning is a sustaining responsibility from launch day forward.</li>
+</ol>
+<p>Three companion documents:</p>
+<ul>
+<li><code>concepts/rag-plan.md</code> — architecture and endpoint specs.</li>
+<li><code>concepts/rag-jailbreak-tests.md</code> — adversarial test suite.</li>
+<li><code>concepts/api-endpoints.md</code> — current endpoint registry.</li>
+</ul>
+<p>To-be-authored:</p>
+<ul>
+<li><code>concepts/poc-report.md</code> — created at end of Week 6.</li>
+<li><code>concepts/eval/poc-eval.json</code> — 20-question eval set, week 2.</li>
+<li><code>concepts/eval/full-eval.json</code> — 100-question eval set, week 9.</li>
+<li><code>concepts/model-versions.md</code> — version log, ongoing.</li>
+<li><code>docs/runbooks/*.md</code> — operational runbooks, Phase A.</li>
+<li><code>docs/portability-runbook.md</code> — Week 5 of POC.</li>
+</ul>
+<hr>
+<p><em>Document version: v1 — drafted 2026-05-08</em></p>
+
+</section>
+
+<div class="footer">
+  Generated from <code>deployment-plan.md</code> via <code>scripts/build-deployment-html.js</code>
+</div>
+
+</main>
+</div>
+
+<script>
+  (function () {
+    // ---------- DOM refs ----------
+    const cards = Array.from(document.querySelectorAll('.prompt-card'));
+    const targets = cards
+      .map(c => document.getElementById(c.dataset.target))
+      .filter(Boolean);
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('drawerBackdrop');
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebarClose = document.getElementById('sidebarClose');
+    const progressBar = document.getElementById('progressBar');
+    const bookmarkList = document.getElementById('bookmarkList');
+    const bookmarkEmpty = document.getElementById('bookmarkEmpty');
+
+    const STORAGE_KEY = 'deployment-plan:bookmarks:v1';
+    const isMobile = () => window.matchMedia('(max-width: 1024px)').matches;
+
+    // ---------- Drawer ----------
+    function openDrawer() {
+      sidebar.classList.add('is-open');
+      backdrop.classList.add('is-open');
+      document.body.classList.add('no-scroll');
+      if (menuToggle) menuToggle.setAttribute('aria-expanded', 'true');
+    }
+    function closeDrawer() {
+      sidebar.classList.remove('is-open');
+      backdrop.classList.remove('is-open');
+      document.body.classList.remove('no-scroll');
+      if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    if (menuToggle) menuToggle.addEventListener('click', openDrawer);
+    if (sidebarClose) sidebarClose.addEventListener('click', closeDrawer);
+    if (backdrop) backdrop.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && sidebar.classList.contains('is-open')) closeDrawer();
+    });
+
+    function smoothScrollTo(el) {
+      if (isMobile()) {
+        closeDrawer();
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 260);
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    // ---------- Section cards ----------
+    cards.forEach(card => {
+      card.addEventListener('click', e => {
+        e.preventDefault();
+        const el = document.getElementById(card.dataset.target);
+        if (!el) return;
+        smoothScrollTo(el);
+        history.replaceState(null, '', '#' + card.dataset.target);
+        setActiveSection(card.dataset.target);
+      });
+    });
+
+    function setActiveSection(id) {
+      cards.forEach(c => c.classList.toggle('active', c.dataset.target === id));
+    }
+
+    if ('IntersectionObserver' in window && targets.length) {
+      const observer = new IntersectionObserver(
+        entries => {
+          const visible = entries
+            .filter(e => e.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          if (visible.length) setActiveSection(visible[0].target.id);
+        },
+        { rootMargin: '-15% 0px -70% 0px', threshold: 0 }
+      );
+      targets.forEach(t => observer.observe(t));
+    }
+
+    if (location.hash) {
+      const hashId = location.hash.replace('#', '');
+      if (cards.some(c => c.dataset.target === hashId)) setActiveSection(hashId);
+    } else if (cards.length) {
+      setActiveSection(cards[0].dataset.target);
+    }
+
+    // ---------- Heading IDs + bookmark toggles ----------
+    function slugify(text) {
+      return (text || '')
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+    }
+
+    function bookmarkIconSVG(filled) {
+      return '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="' +
+        (filled ? 'currentColor' : 'none') +
+        '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+    }
+
+    const usedIds = new Set();
+    document.querySelectorAll('[id]').forEach(el => usedIds.add(el.id));
+
+    const headings = Array.from(document.querySelectorAll('main h2, main h3, main h4'));
+    headings.forEach(h => {
+      if (!h.id) {
+        let base = 'h-' + slugify(h.textContent || '');
+        if (base === 'h-') base = 'h-section';
+        let id = base;
+        let n = 2;
+        while (usedIds.has(id)) {
+          id = base + '-' + n;
+          n++;
+        }
+        h.id = id;
+        usedIds.add(id);
+      }
+      addBookmarkToggle(h);
+    });
+
+    function addBookmarkToggle(h) {
+      if (h.querySelector('.bookmark-toggle')) return;
+      const labelText = (h.textContent || '').replace(/\s+/g, ' ').trim();
+      const btn = document.createElement('button');
+      btn.className = 'bookmark-toggle';
+      btn.type = 'button';
+      btn.setAttribute('aria-label', 'Toggle bookmark for ' + labelText);
+      btn.dataset.targetId = h.id;
+      btn.dataset.label = labelText;
+      btn.innerHTML = bookmarkIconSVG(false);
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleBookmark(h.id, labelText);
+      });
+      h.appendChild(btn);
+    }
+
+    // ---------- Bookmarks store ----------
+    function loadBookmarks() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) { return []; }
+    }
+    function saveBookmarks(arr) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+      catch (e) { /* silent */ }
+    }
+
+    let bookmarks = loadBookmarks();
+
+    function isBookmarked(id) {
+      return bookmarks.some(b => b.targetId === id);
+    }
+
+    function toggleBookmark(id, label) {
+      if (isBookmarked(id)) {
+        bookmarks = bookmarks.filter(b => b.targetId !== id);
+      } else {
+        bookmarks.push({
+          targetId: id,
+          label: label,
+          addedAt: new Date().toISOString()
+        });
+      }
+      saveBookmarks(bookmarks);
+      renderBookmarks();
+    }
+
+    // ---------- Bookmark rendering ----------
+    let bookmarkObserver = null;
+
+    function renderBookmarks() {
+      document.querySelectorAll('.bookmark-toggle').forEach(btn => {
+        const isOn = isBookmarked(btn.dataset.targetId);
+        btn.classList.toggle('is-bookmarked', isOn);
+        btn.innerHTML = bookmarkIconSVG(isOn);
+      });
+
+      if (!bookmarkList) return;
+      bookmarkList.innerHTML = '';
+
+      if (bookmarks.length === 0) {
+        if (bookmarkEmpty) bookmarkEmpty.style.display = 'block';
+      } else {
+        if (bookmarkEmpty) bookmarkEmpty.style.display = 'none';
+        bookmarks.forEach(b => {
+          const card = document.createElement('a');
+          card.className = 'bookmark-card';
+          card.href = '#' + b.targetId;
+          card.dataset.target = b.targetId;
+          card.title = b.label;
+          card.innerHTML =
+            '<span class="bm-icon">' + bookmarkIconSVG(true) + '</span>' +
+            '<span class="bm-label"></span>' +
+            '<button class="bm-remove" type="button" aria-label="Remove bookmark">×</button>';
+          card.querySelector('.bm-label').textContent = b.label;
+          card.addEventListener('click', e => {
+            if (e.target.closest('.bm-remove')) {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleBookmark(b.targetId, b.label);
+              return;
+            }
+            e.preventDefault();
+            const el = document.getElementById(b.targetId);
+            if (!el) return;
+            smoothScrollTo(el);
+            history.replaceState(null, '', '#' + b.targetId);
+          });
+          bookmarkList.appendChild(card);
+        });
+      }
+      refreshBookmarkObserver();
+    }
+
+    function refreshBookmarkObserver() {
+      if (bookmarkObserver) {
+        bookmarkObserver.disconnect();
+        bookmarkObserver = null;
+      }
+      if (!('IntersectionObserver' in window) || bookmarks.length === 0) return;
+      bookmarkObserver = new IntersectionObserver(
+        entries => {
+          const visible = entries
+            .filter(e => e.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          if (visible.length) {
+            const id = visible[0].target.id;
+            document.querySelectorAll('.bookmark-card').forEach(c => {
+              c.classList.toggle('active', c.dataset.target === id);
+            });
+          }
+        },
+        { rootMargin: '-15% 0px -70% 0px', threshold: 0 }
+      );
+      bookmarks.forEach(b => {
+        const el = document.getElementById(b.targetId);
+        if (el) bookmarkObserver.observe(el);
+      });
+    }
+
+    renderBookmarks();
+
+    // ---------- Reading progress bar ----------
+    let ticking = false;
+    function updateProgress() {
+      const doc = document.documentElement;
+      const scrollTop = window.scrollY || doc.scrollTop;
+      const scrollHeight = doc.scrollHeight - doc.clientHeight;
+      const pct = scrollHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / scrollHeight) * 100)) : 0;
+      if (progressBar) progressBar.style.width = pct + '%';
+      ticking = false;
+    }
+    function onScroll() {
+      if (!ticking) {
+        window.requestAnimationFrame(updateProgress);
+        ticking = true;
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    updateProgress();
+  })();
+</script>
+
+</body>
+</html>

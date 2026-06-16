@@ -1,0 +1,99 @@
+.login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  padding: 30px 28px 26px;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.login-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+  font-size: 17px;
+}
+.login-brand h1 {
+  font-size: 24px;
+  font-weight: 600;
+}
+.login-accent {
+  color: var(--accent-ink);
+}
+.login-sub {
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  margin: 0 0 22px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+}
+.login-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.login-form .input {
+  margin-bottom: 14px;
+}
+.login-form .password-field {
+  margin-bottom: 14px;
+}
+.login-form .password-field .input {
+  margin-bottom: 0;
+}
+.login-submit {
+  justify-content: center;
+  height: 40px;
+  margin-top: 4px;
+}
+.login-error {
+  background: var(--danger-wash);
+  color: var(--danger);
+  font-size: 12.5px;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+
+.login-switch {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.login-link {
+  border: none;
+  background: transparent;
+  color: var(--accent-ink);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+.login-link:hover {
+  text-decoration: underline;
+}

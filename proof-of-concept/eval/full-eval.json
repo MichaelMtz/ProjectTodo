@@ -1,0 +1,527 @@
+{
+  "name": "Full Eval Set v1 (scaffold)",
+  "version": "0.1.0",
+  "description": "Comprehensive evaluation set for the SnoCountry chat assistant. Scaffolded with 30 starter questions covering broader dimensions than poc-eval.json. Expand to 100 questions before public launch (Week 9 of deployment-plan.md). Pass condition: at least 90% of answers rated 'good' or 'excellent'.",
+  "useCases": {
+    "U1": "Single-resort conditions",
+    "U2": "State / region conditions",
+    "U3": "Recommendation",
+    "U4": "Relevant news"
+  },
+  "scoring": {
+    "rubric": {
+      "excellent": "All mustContainOneOf matched, none of mustNotContain present, faithful to retrieved data, on-brand tone, ends with follow-up, length within bounds.",
+      "good": "All hard criteria met (containment, faithfulness, no off-topic content), minor tone or formatting issues acceptable.",
+      "fair": "Answer is on-topic and not factually wrong, but misses key information or runs over maxWords.",
+      "poor": "Wrong answer, hallucinated number, off-topic, or guardrail-blocked when it should not have been."
+    },
+    "passThreshold": 0.90,
+    "criticalCriteria": [
+      "faithfulness",
+      "no_invented_numbers",
+      "no_guardrail_false_positive",
+      "tone_consistency",
+      "no_PII_leak"
+    ]
+  },
+  "expansionPlan": {
+    "currentCount": 30,
+    "targetCount": 100,
+    "categoriesToExpand": [
+      { "category": "Multi-turn conversation flows", "current": 2, "target": 15 },
+      { "category": "Ambiguous resort references", "current": 2, "target": 8 },
+      { "category": "Cross-resort comparisons", "current": 2, "target": 8 },
+      { "category": "Trip planning with constraints", "current": 3, "target": 10 },
+      { "category": "Empty-result graceful handling", "current": 2, "target": 5 },
+      { "category": "Faithfulness stress tests", "current": 2, "target": 5 },
+      { "category": "Brand-voice consistency", "current": 1, "target": 5 },
+      { "category": "Adjacent-topic refusal accuracy", "current": 3, "target": 10 },
+      { "category": "Long-tail resort coverage", "current": 1, "target": 10 },
+      { "category": "Time-sensitive queries", "current": 2, "target": 6 },
+      { "category": "Question variants (paraphrase)", "current": 2, "target": 8 }
+    ],
+    "guidance": "Expand by harvesting real questions from the rag_requests log (anonymized). Aim for distribution that matches actual traffic. Avoid duplication with poc-eval.json (E001-E020); start full-eval IDs at E100."
+  },
+  "questions": [
+    {
+      "id": "E100",
+      "useCase": "U1",
+      "question": "How is Big Sky today?",
+      "context": { "resortId": "308001", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Big Sky", "base", "lifts"],
+        "mustNotContain": [],
+        "maxWords": 250,
+        "minWords": 30
+      },
+      "rubricNotes": "Carry-over from POC eval E001 to anchor the broader suite.",
+      "tags": ["live_data", "single_resort", "anchor"]
+    },
+    {
+      "id": "E101",
+      "useCase": "U1",
+      "question": "Hows BigSky lookin?",
+      "context": { "resortId": "308001", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Big Sky", "base", "lifts"],
+        "mustNotContain": ["I cannot understand"],
+        "maxWords": 250,
+        "minWords": 30
+      },
+      "rubricNotes": "Casual phrasing + missing space. Tests classifier robustness to typos.",
+      "tags": ["live_data", "single_resort", "casual_phrasing", "robustness"]
+    },
+    {
+      "id": "E102",
+      "useCase": "U1",
+      "question": "Conditions @ BS today?",
+      "context": { "resortId": "308001", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Big Sky", "base"],
+        "mustNotContain": [],
+        "maxWords": 250,
+        "minWords": 30
+      },
+      "rubricNotes": "Abbreviated phrasing. The page-context resortId disambiguates 'BS' = Big Sky. Without it, response should ask for clarification.",
+      "tags": ["live_data", "single_resort", "ambiguous_reference"]
+    },
+    {
+      "id": "E103",
+      "useCase": "U1",
+      "question": "Conditions at Eagle Point?",
+      "context": { "resortId": null, "region": null, "pageSource": null },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["overview"],
+        "mustContainOneOf": ["Eagle Point", "Utah", "which"],
+        "mustNotContain": [],
+        "maxWords": 250,
+        "minWords": 30
+      },
+      "rubricNotes": "Eagle Point exists in Utah. Without page context, model must either disambiguate or answer for the most likely match. Either is acceptable; inventing data is not.",
+      "tags": ["ambiguous_reference", "single_resort", "live_data"]
+    },
+    {
+      "id": "E104",
+      "useCase": "U1",
+      "question": "What's the deepest base in the Rockies right now?",
+      "context": { "resortId": null, "region": "rockies", "pageSource": null },
+      "expected": {
+        "intent": "region_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["base", "inches", "deepest"],
+        "mustNotContain": [],
+        "maxWords": 200,
+        "minWords": 30
+      },
+      "rubricNotes": "Superlative across a region. Single resort answer with the highest base value.",
+      "tags": ["live_data", "region", "superlative", "ranking"]
+    },
+    {
+      "id": "E105",
+      "useCase": "U2",
+      "question": "Compare Big Sky to Jackson Hole.",
+      "context": { "resortId": null, "region": null, "pageSource": null },
+      "expected": {
+        "intent": "region_status",
+        "sourcesUsed": ["live", "overview"],
+        "mustContainOneOf": ["Big Sky", "Jackson"],
+        "mustNotContain": [],
+        "maxWords": 380,
+        "minWords": 100
+      },
+      "rubricNotes": "Cross-resort comparison. Both names must appear; structured comparison preferred (terrain, conditions, vibe).",
+      "tags": ["comparison", "multi_resort", "live_data"]
+    },
+    {
+      "id": "E106",
+      "useCase": "U2",
+      "question": "Which gets more snow on average — Alta or Mammoth?",
+      "context": { "resortId": null, "region": null, "pageSource": null },
+      "expected": {
+        "intent": "region_status",
+        "sourcesUsed": ["overview"],
+        "mustContainOneOf": ["Alta", "Mammoth", "average", "season"],
+        "mustNotContain": [],
+        "maxWords": 280,
+        "minWords": 50
+      },
+      "rubricNotes": "Climatological comparison (averages, not today). Vector search over overviews/articles. If overview docs lack averages, graceful refusal acceptable.",
+      "tags": ["comparison", "climatology", "vector_dominant"]
+    },
+    {
+      "id": "E107",
+      "useCase": "U3",
+      "question": "I'm going to Colorado in March with my kids (8 and 11). Where should we ski for a 4-day trip?",
+      "context": { "resortId": null, "region": "colorado", "pageSource": null },
+      "expected": {
+        "intent": "recommend",
+        "sourcesUsed": ["overview", "live"],
+        "mustContainOneOf": ["Steamboat", "Keystone", "Beaver Creek", "Granby", "Copper", "family"],
+        "mustNotContain": ["expert only", "extreme terrain"],
+        "maxWords": 400,
+        "minWords": 120
+      },
+      "rubricNotes": "Multi-constraint trip planning (region + season + ages + duration). Should pick 1-2 resorts and justify across all constraints.",
+      "tags": ["recommendation", "trip_planning", "multi_constraint"]
+    },
+    {
+      "id": "E108",
+      "useCase": "U3",
+      "question": "Where can I ski today within 3 hours of Salt Lake City airport?",
+      "context": { "resortId": null, "region": "utah", "pageSource": null },
+      "expected": {
+        "intent": "recommend",
+        "sourcesUsed": ["overview", "live"],
+        "mustContainOneOf": ["Alta", "Snowbird", "Park City", "Solitude", "Brighton", "Deer Valley"],
+        "mustNotContain": [],
+        "maxWords": 320,
+        "minWords": 80
+      },
+      "rubricNotes": "Geographic constraint (proximity to SLC). All listed resorts are <3hr from SLC. Should cite current conditions to pick the best one today.",
+      "tags": ["recommendation", "trip_planning", "geographic_constraint"]
+    },
+    {
+      "id": "E109",
+      "useCase": "U3",
+      "question": "What's a good resort for a beginner who has never skied before?",
+      "context": { "resortId": null, "region": null, "pageSource": null },
+      "expected": {
+        "intent": "recommend",
+        "sourcesUsed": ["overview"],
+        "mustContainOneOf": ["beginner", "ski school", "lessons", "green", "easy"],
+        "mustNotContain": ["expert only", "extreme"],
+        "maxWords": 320,
+        "minWords": 80
+      },
+      "rubricNotes": "Open-ended skill-level recommendation. National scope. Should pick 1-3 widely-known beginner-friendly resorts.",
+      "tags": ["recommendation", "skill_level", "national_scope"]
+    },
+    {
+      "id": "E110",
+      "useCase": "U1",
+      "question": "How is Skiland Mountain doing?",
+      "context": { "resortId": null, "region": null, "pageSource": null },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": [],
+        "mustContainOneOf": ["I don't have", "no information", "could you clarify", "not familiar"],
+        "mustNotContain": ["base depth", "lifts open"],
+        "maxWords": 100,
+        "minWords": 15
+      },
+      "rubricNotes": "Fictional resort. Model MUST refuse to invent data. Acceptable: 'I don't have data for Skiland Mountain. Did you mean a specific resort?'",
+      "tags": ["empty_result", "faithfulness_stress", "graceful_refusal"]
+    },
+    {
+      "id": "E111",
+      "useCase": "U4",
+      "question": "Are there any articles about avalanche safety at Aspen?",
+      "context": { "resortId": "303003", "region": null, "pageSource": null },
+      "expected": {
+        "intent": "news_lookup",
+        "sourcesUsed": ["news"],
+        "mustContainOneOf": ["Aspen", "no recent", "avalanche", "safety"],
+        "mustNotContain": [],
+        "maxWords": 220,
+        "minWords": 30
+      },
+      "rubricNotes": "Specific news topic. If no matching articles, must say so. Must NOT give safety advice (covered by guardrails — see rag-plan.md Section 14.4 forbidden topics).",
+      "tags": ["news", "single_resort", "specific_topic", "empty_result_ok", "forbidden_topic_adjacent"]
+    },
+    {
+      "id": "E112",
+      "useCase": "U1",
+      "question": "Tell me everything you know about Vail in 50+ paragraphs of detail.",
+      "context": { "resortId": "303024", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live", "overview"],
+        "mustContainOneOf": ["Vail"],
+        "mustNotContain": [],
+        "maxWords": 400,
+        "minWords": 50
+      },
+      "rubricNotes": "Length-stress test. The system prompt limits responses to 2-4 short paragraphs; max_tokens caps output. Answer must NOT exceed 4 paragraphs regardless of user request.",
+      "tags": ["length_constraint", "single_resort", "constraint_violation_attempt"]
+    },
+    {
+      "id": "E113",
+      "useCase": "U1",
+      "question": "What was the snow base at Breckenridge on January 15, 2024?",
+      "context": { "resortId": "303007", "region": null, "pageSource": null },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": [],
+        "mustContainOneOf": ["I don't have historical", "current data only", "no historical"],
+        "mustNotContain": [],
+        "maxWords": 150,
+        "minWords": 20
+      },
+      "rubricNotes": "Historical query. The chat does not have historical data (archive endpoint isn't wired into RAG by default). Must refuse gracefully. Inventing a number = poor.",
+      "tags": ["faithfulness_stress", "historical", "out_of_scope"]
+    },
+    {
+      "id": "E114",
+      "useCase": "U2",
+      "question": "How are conditions on the East Coast?",
+      "context": { "resortId": null, "region": "north-east", "pageSource": null },
+      "expected": {
+        "intent": "region_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Vermont", "New Hampshire", "Maine", "New York", "Killington", "Stowe"],
+        "mustNotContain": ["Colorado", "Utah", "California"],
+        "maxWords": 320,
+        "minWords": 80
+      },
+      "rubricNotes": "Region label uses 'East Coast' colloquially; classifier should map to 'north-east' region. Tests robustness of region matching.",
+      "tags": ["region", "label_robustness", "live_data"]
+    },
+    {
+      "id": "E115",
+      "useCase": "U3",
+      "question": "Cheapest resort in Utah right now?",
+      "context": { "resortId": null, "region": "utah", "pageSource": null },
+      "expected": {
+        "intent": "recommend",
+        "sourcesUsed": ["overview"],
+        "mustContainOneOf": ["Brighton", "Sundance", "Powder Mountain", "ticket", "price", "I don't have current pricing"],
+        "mustNotContain": [],
+        "maxWords": 280,
+        "minWords": 50
+      },
+      "rubricNotes": "Pricing query. If overview content doesn't include current ticket prices, graceful refusal acceptable. Inventing prices = poor.",
+      "tags": ["recommendation", "pricing", "out_of_scope_ok", "faithfulness_stress"]
+    },
+    {
+      "id": "E116",
+      "useCase": "U1",
+      "question": "Do they have Wi-Fi at the lodge at Mammoth?",
+      "context": { "resortId": "619002", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "other",
+        "sourcesUsed": [],
+        "mustContainOneOf": ["I don't have", "snow conditions", "ski resorts", "trip planning"],
+        "mustNotContain": ["Yes, the lodge has", "Wi-Fi at"],
+        "maxWords": 120,
+        "minWords": 20
+      },
+      "rubricNotes": "Adjacent-but-off-topic question. Amenity question outside the bot's scope. Must refuse politely with the canned message.",
+      "tags": ["adjacent_topic", "graceful_refusal", "scope_test"]
+    },
+    {
+      "id": "E117",
+      "useCase": "U1",
+      "question": "What's the elevation at Wolf Creek?",
+      "context": { "resortId": "303023", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["overview"],
+        "mustContainOneOf": ["Wolf Creek", "elevation", "feet", "summit", "base elevation"],
+        "mustNotContain": [],
+        "maxWords": 180,
+        "minWords": 20
+      },
+      "rubricNotes": "Static-fact query. Should use overview content; if elevation isn't in the indexed overview, refuse rather than invent.",
+      "tags": ["static_fact", "single_resort", "vector_dominant"]
+    },
+    {
+      "id": "E118",
+      "useCase": "U3",
+      "question": "I want night skiing tonight. Where in the country can I do that?",
+      "context": { "resortId": null, "region": null, "pageSource": null },
+      "expected": {
+        "intent": "recommend",
+        "sourcesUsed": ["overview"],
+        "mustContainOneOf": ["night skiing", "evening", "Keystone", "Boreal", "Mountain Creek", "Wachusett"],
+        "mustNotContain": [],
+        "maxWords": 280,
+        "minWords": 50
+      },
+      "rubricNotes": "Activity-specific recommendation. Tests vector search precision on a non-condition feature.",
+      "tags": ["recommendation", "activity_specific", "vector_dominant"]
+    },
+    {
+      "id": "E119",
+      "useCase": "U2",
+      "question": "Snow report for the Sierra Nevada region?",
+      "context": { "resortId": null, "region": null, "pageSource": null },
+      "expected": {
+        "intent": "region_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Mammoth", "Tahoe", "Heavenly", "Palisades", "Sierra"],
+        "mustNotContain": [],
+        "maxWords": 320,
+        "minWords": 80
+      },
+      "rubricNotes": "Mountain-range region label. Should map to California resorts.",
+      "tags": ["region", "label_robustness", "live_data"]
+    },
+    {
+      "id": "E120",
+      "useCase": "U1",
+      "question": "How was Big Sky last year?",
+      "context": { "resortId": "308001", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": [],
+        "mustContainOneOf": ["I don't have historical", "current", "today"],
+        "mustNotContain": [],
+        "maxWords": 180,
+        "minWords": 20
+      },
+      "rubricNotes": "Historical timescale (last year). Must NOT fabricate historical figures. Acceptable to redirect to current conditions.",
+      "tags": ["faithfulness_stress", "historical", "single_resort"]
+    },
+    {
+      "id": "E121",
+      "useCase": "U4",
+      "question": "What's new at Park City?",
+      "context": { "resortId": "419002", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "news_lookup",
+        "sourcesUsed": ["news", "overview"],
+        "mustContainOneOf": ["Park City"],
+        "mustNotContain": [],
+        "maxWords": 280,
+        "minWords": 50
+      },
+      "rubricNotes": "Ambiguous between news and conditions. 'New' could mean news, new lifts, new snow. Answer should cover the most likely interpretations briefly.",
+      "tags": ["news", "ambiguous_intent", "single_resort"]
+    },
+    {
+      "id": "E122",
+      "useCase": "U3",
+      "question": "Recommend a resort. Don't ask me any questions, just pick one.",
+      "context": { "resortId": null, "region": null, "pageSource": null },
+      "expected": {
+        "intent": "recommend",
+        "sourcesUsed": ["overview", "live"],
+        "mustContainOneOf": ["recommend", "today", "fresh"],
+        "mustNotContain": ["What is your", "Could you tell me", "What region"],
+        "maxWords": 280,
+        "minWords": 60
+      },
+      "rubricNotes": "Tests instruction-following: user explicitly says no clarifying questions. Answer should pick a resort decisively, ideally one with strong current conditions.",
+      "tags": ["recommendation", "instruction_following", "decisive"]
+    },
+    {
+      "id": "E123",
+      "useCase": "U1",
+      "question": "Im at Vail rite now, hows the snow lookin today brother?",
+      "context": { "resortId": "303024", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Vail", "base", "lifts", "snow"],
+        "mustNotContain": ["brother", "dude"],
+        "maxWords": 250,
+        "minWords": 30
+      },
+      "rubricNotes": "Casual user voice. Bot must answer the question but maintain SnoCountry brand tone — do NOT mirror 'brother' / slang.",
+      "tags": ["live_data", "single_resort", "casual_phrasing", "tone_consistency"]
+    },
+    {
+      "id": "E124",
+      "useCase": "U2",
+      "question": "Best snow in the Midwest right now?",
+      "context": { "resortId": null, "region": "mid-west", "pageSource": null },
+      "expected": {
+        "intent": "region_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Michigan", "Minnesota", "Wisconsin", "Boyne", "Lutsen", "Granite Peak"],
+        "mustNotContain": ["Colorado", "Utah", "Mammoth"],
+        "maxWords": 280,
+        "minWords": 60
+      },
+      "rubricNotes": "Underserved region. Must stay within the actual Midwest, not promote big-name western resorts. Tests retrieval geographic filtering.",
+      "tags": ["region", "long_tail_geography", "live_data"]
+    },
+    {
+      "id": "E125",
+      "useCase": "U1",
+      "question": "Yes",
+      "context": { "resortId": "303024", "region": null, "pageSource": "resort", "previousTurn": { "assistantText": "Would you like me to give you the full snow report for Vail or just lifts and trails?" } },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Vail", "base", "lifts", "trails"],
+        "mustNotContain": ["I don't understand", "could you clarify"],
+        "maxWords": 280,
+        "minWords": 50
+      },
+      "rubricNotes": "Multi-turn. Single-word reply requires conversation context. Tests session memory in the orchestrator.",
+      "tags": ["multi_turn", "session_context", "single_resort"]
+    },
+    {
+      "id": "E126",
+      "useCase": "U3",
+      "question": "And what about for advanced skiers?",
+      "context": { "resortId": null, "region": "colorado", "pageSource": null, "previousTurn": { "userText": "Family-friendly Colorado resort recommendation?", "assistantText": "Steamboat is a great choice for families..." } },
+      "expected": {
+        "intent": "recommend",
+        "sourcesUsed": ["overview"],
+        "mustContainOneOf": ["A-Basin", "Crested Butte", "Telluride", "Aspen Highlands", "Silverton", "Wolf Creek", "advanced", "expert"],
+        "mustNotContain": ["family-friendly", "beginner"],
+        "maxWords": 320,
+        "minWords": 80
+      },
+      "rubricNotes": "Multi-turn. Carries 'Colorado' from previous context, switches the skill criterion. Tests context retention without context drift.",
+      "tags": ["multi_turn", "session_context", "recommendation"]
+    },
+    {
+      "id": "E127",
+      "useCase": "U1",
+      "question": "ski conditions at copper",
+      "context": { "resortId": "303009", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Copper", "base", "lifts"],
+        "mustNotContain": [],
+        "maxWords": 250,
+        "minWords": 30
+      },
+      "rubricNotes": "Lowercase, no punctuation, terse query. Tests robustness to minimalist input.",
+      "tags": ["live_data", "single_resort", "minimalist_input", "robustness"]
+    },
+    {
+      "id": "E128",
+      "useCase": "U4",
+      "question": "Has Vail acquired any new resorts recently?",
+      "context": { "resortId": null, "region": null, "pageSource": null },
+      "expected": {
+        "intent": "news_lookup",
+        "sourcesUsed": ["news"],
+        "mustContainOneOf": ["Vail Resorts", "acquisition", "no recent"],
+        "mustNotContain": [],
+        "maxWords": 280,
+        "minWords": 50
+      },
+      "rubricNotes": "Industry news. Differentiates 'Vail Resorts' (the company) from 'Vail Mountain' (the resort). If no relevant articles indexed, graceful refusal acceptable.",
+      "tags": ["news", "industry", "entity_disambiguation"]
+    },
+    {
+      "id": "E129",
+      "useCase": "U1",
+      "question": "What's a good runs at Heavenly today?",
+      "context": { "resortId": "916004", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live", "overview"],
+        "mustContainOneOf": ["Heavenly", "trail", "run", "open"],
+        "mustNotContain": [],
+        "maxWords": 280,
+        "minWords": 50
+      },
+      "rubricNotes": "Trail-level recommendation within a single resort. Combines live trail status with overview content about specific runs.",
+      "tags": ["live_data", "single_resort", "trail_level"]
+    }
+  ]
+}

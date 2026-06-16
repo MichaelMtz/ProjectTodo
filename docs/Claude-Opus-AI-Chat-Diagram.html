@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SnoCountry RAG Server — Architecture &amp; Best Practices</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import { animate } from "https://esm.sh/motion@11.11.17";
+  window.__motion = { animate };
+</script>
+<!-- Reuse the base look & feel from the original concept -->
+<link rel="stylesheet" href="diagram.css" />
+<style>
+  /* ── Supplemental styles for the RAG-server diagram ───────────────────── */
+
+  /* The emphasized RAG server container */
+  .rag-server {
+    position: relative;
+    border-radius: 24px;
+    padding: 20px;
+    background:
+      linear-gradient(180deg, rgba(239,246,255,0.65), rgba(245,243,255,0.55));
+    border: 1.5px solid rgba(129,140,248,0.45);
+    box-shadow:
+      0 0 0 1px rgba(99,102,241,0.06),
+      0 18px 48px -16px rgba(79,70,229,0.28),
+      0 2px 8px rgba(0,0,0,0.04);
+  }
+  .rag-server::before {
+    content: "";
+    position: absolute;
+    inset: -1.5px;
+    border-radius: 24px;
+    padding: 1.5px;
+    background: linear-gradient(135deg, #818cf8, #a855f7, #38bdf8);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  /* Numbered stage badge */
+  .stage-num {
+    width: 22px; height: 22px;
+    border-radius: 7px;
+    background: linear-gradient(135deg,#6366f1,#8b5cf6);
+    color: #fff;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(99,102,241,0.35);
+  }
+
+  /* Guardrail layer chips (L1..L5) */
+  .layer-badge {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.04em;
+    padding: 1.5px 6px; border-radius: 6px;
+    display: inline-flex; align-items: center; gap: 3px;
+    border: 1px solid transparent;
+  }
+  .layer-1 { background:#fee2e2; color:#b91c1c; border-color:#fecaca; }
+  .layer-2 { background:#ffedd5; color:#c2410c; border-color:#fed7aa; }
+  .layer-3 { background:#dcfce7; color:#15803d; border-color:#bbf7d0; }
+  .layer-4 { background:#dbeafe; color:#1d4ed8; border-color:#bfdbfe; }
+  .layer-5 { background:#f3e8ff; color:#7e22ce; border-color:#e9d5ff; }
+
+  /* Section eyebrow */
+  .eyebrow {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #94a3b8;
+  }
+
+  /* Best-practice accent ring on cards */
+  .flow-card.bp-card { border-color: rgba(16,185,129,0.4); }
+  .flow-card.bp-card:hover { box-shadow: 0 8px 30px rgba(16,185,129,0.18); }
+
+  /* Best-practice callout inside the side panel */
+  .bp-callout {
+    background: linear-gradient(135deg,#ecfdf5,#f0fdfa);
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 11.5px; line-height: 1.5; color: #047857;
+  }
+  .bp-callout b { color: #065f46; }
+
+  /* Hybrid-retrieval inner sub-box */
+  .retrieval-box {
+    background: rgba(255,255,255,0.6);
+    border: 1px dashed rgba(148,163,184,0.5);
+    border-radius: 16px;
+    padding: 12px;
+  }
+
+  /* Pill connector label */
+  .pipe-label {
+    background:#eef2ff; border:1px solid #e0e7ff; color:#4f46e5;
+    font-size:10px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase;
+    padding:3px 12px; border-radius:999px;
+  }
+
+  /* Best-practice reference chips reuse plan-chip styling from diagram.css */
+  .bp-grid-card { min-height: 100%; }
+
+  /* Slightly tighten chips on dense cards */
+  .mini-chip {
+    background:#f1f5f9; border:1px solid #e2e8f0; color:#475569;
+    border-radius:7px; padding:2px 7px; font-size:10px; font-weight:500;
+  }
+</style>
+</head>
+<body class="p-6 md:p-10">
+
+<!-- ── Header ───────────────────────────────────────────────────────────── -->
+<div class="max-w-7xl mx-auto mb-8 flex items-start justify-between flex-wrap gap-4">
+  <div>
+    <div class="flex items-center gap-3 mb-1">
+      <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg,#6366f1,#a855f7)">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" opacity="0.9"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <span class="eyebrow">RAG Server Architecture · Best Practices</span>
+    </div>
+    <h1 class="text-2xl font-bold text-slate-800">SnoCountry <span class="gradient-text">RAG Server</span> &amp; Safety Pipeline</h1>
+    <p class="text-sm text-slate-400 mt-0.5">Hybrid retrieval · five-layer guardrails · grounded, streamed answers — <code class="text-slate-400">/api/rag/chat</code> on Convex</p>
+  </div>
+  <div class="flex items-center gap-4">
+    <div id="legend" class="flex items-center gap-5 bg-white rounded-xl px-4 py-2.5 shadow-sm border border-slate-100 text-xs text-slate-500">
+      <div class="flex items-center gap-2"><div class="legend-line"></div><span>Request flow</span></div>
+      <div class="flex items-center gap-2"><div class="legend-line solid"></div><span>Data / async</span></div>
+      <div id="legend-bp" class="flex items-center gap-2 cursor-pointer select-none" onclick="toggleBestPractices()"><div class="w-2.5 h-2.5 rounded bg-emerald-400"></div><span>Best practices</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main layout: diagram canvas + side panel ─────────────────────────── -->
+<div class="max-w-7xl mx-auto flex gap-5 items-start">
+
+  <!-- Diagram canvas -->
+  <div class="flex-1 relative" id="diagram-canvas">
+
+    <!-- SVG connector layer -->
+    <svg class="connector-svg" id="connector-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:5;">
+      <defs>
+        <marker id="arrow" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><polygon points="0 1, 6 3.5, 0 6" fill="#6366f1"/></marker>
+        <marker id="arrow-solid" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><polygon points="0 1, 6 3.5, 0 6" fill="#64748b"/></marker>
+      </defs>
+    </svg>
+
+    <!-- ── Client ── -->
+    <div class="flex justify-center mb-6 relative" style="z-index:10">
+      <div class="flow-card delay-1 p-4 w-80" id="card-client" onclick="selectCard('client')">
+        <div class="node-highlight"></div>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="icon-pill" style="background:linear-gradient(135deg,#eff6ff,#f5f3ff)">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" stroke="#6366f1" stroke-width="1.8"/><path d="M3 9h18" stroke="#6366f1" stroke-width="1.8"/><circle cx="7.5" cy="6" r="0.9" fill="#6366f1"/></svg>
+          </div>
+          <div>
+            <div class="text-[11px] text-slate-400 font-medium">SnoCountry.com · Chat Widget</div>
+            <div class="text-sm font-semibold text-slate-700">1. User Browser</div>
+          </div>
+        </div>
+        <div class="flex gap-1.5 flex-wrap">
+          <span class="tech-chip vendor-chip">Netlify CDN</span>
+          <span class="tech-chip">POST /api/rag/chat</span>
+          <span class="tech-chip">SSE stream</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RAG SERVER (the emphasis) ── -->
+    <div class="rag-server mb-6 relative" id="rag-server-box" style="z-index:10">
+
+      <!-- Server header (clickable) -->
+      <div class="flex items-center justify-between mb-4 cursor-pointer" id="card-ragserver" onclick="selectCard('ragserver')">
+        <div class="flex items-center gap-3">
+          <div class="icon-pill" style="background:linear-gradient(135deg,#6366f1,#a855f7);width:38px;height:38px">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2" stroke="#fff" stroke-width="1.7"/><rect x="3" y="14" width="18" height="6" rx="2" stroke="#fff" stroke-width="1.7"/><circle cx="7" cy="7" r="1" fill="#fff"/><circle cx="7" cy="17" r="1" fill="#fff"/></svg>
+          </div>
+          <div>
+            <div class="eyebrow">RAG Orchestrator · Convex <span class="text-slate-300">good-cormorant-17</span></div>
+            <div class="text-base font-bold text-slate-800">RAG Server — <code class="text-indigo-600">/api/rag/chat</code></div>
+          </div>
+        </div>
+        <div class="hidden md:flex items-center gap-1.5">
+          <span class="layer-badge layer-1">L1 Input</span>
+          <span class="layer-badge layer-2">L2 Prompt</span>
+          <span class="layer-badge layer-3">L3 Grounding</span>
+          <span class="layer-badge layer-4">L4 Output</span>
+          <span class="layer-badge layer-5">L5 Ops</span>
+        </div>
+      </div>
+
+      <!-- Pipeline column -->
+      <div class="flex flex-col items-center gap-4">
+
+        <!-- 2. Guardrails In -->
+        <div class="flow-card bp-card p-3.5 w-[420px]" id="card-guard" onclick="selectCard('guard')">
+          <div class="flex items-center gap-2.5 mb-1.5">
+            <div class="stage-num">2</div>
+            <div class="flex-1">
+              <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Defense — Layers 5 + 1</div>
+              <div class="text-sm font-semibold text-slate-700">Guardrails In · sanitize + topic classifier</div>
+            </div>
+            <span class="layer-badge layer-5">L5</span><span class="layer-badge layer-1">L1</span>
+          </div>
+          <div class="flex gap-1.5 flex-wrap">
+            <span class="tech-chip">Rate limit</span>
+            <span class="tech-chip">Strip / encode check</span>
+            <span class="tech-chip">Llama-3.1-8B topic gate</span>
+          </div>
+        </div>
+
+        <!-- 3. Intent -->
+        <div class="flow-card p-3.5 w-[420px]" id="card-intent" onclick="selectCard('intent')">
+          <div class="flex items-center gap-2.5 mb-1.5">
+            <div class="stage-num">3</div>
+            <div class="flex-1">
+              <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Routing</div>
+              <div class="text-sm font-semibold text-slate-700">Intent Classifier · regex-first → LLM fallback</div>
+            </div>
+          </div>
+          <div class="flex gap-1.5 flex-wrap">
+            <span class="tech-chip">resort_status</span>
+            <span class="tech-chip">region_status</span>
+            <span class="tech-chip">recommend</span>
+            <span class="tech-chip">news_lookup</span>
+          </div>
+        </div>
+
+        <!-- 4. Hybrid Retrieval -->
+        <div class="retrieval-box w-full">
+          <div class="flex items-center gap-2.5 mb-3 cursor-pointer" id="card-retrieval" onclick="selectCard('retrieval')">
+            <div class="stage-num">4</div>
+            <div class="flex-1">
+              <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">The RAG core</div>
+              <div class="text-sm font-semibold text-slate-700">Hybrid Retrieval — live API <span class="text-slate-300">+</span> vector search</div>
+            </div>
+            <span class="mini-chip">Token budget ≤ 2,500</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            <!-- 4a live -->
+            <div class="flow-card p-3" id="card-live" onclick="event.stopPropagation(); selectCard('live')">
+              <div class="flex items-center gap-2 mb-1.5">
+                <div class="icon-pill" style="background:#fefce8;width:26px;height:26px;border-radius:8px">
+                  <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M2 12h4l3-9 6 18 3-9h4" stroke="#eab308" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="text-[11px] font-semibold text-slate-700 leading-tight">4a · Live<br>Conditions</div>
+              </div>
+              <div class="flex gap-1 flex-wrap">
+                <span class="tech-chip">?format=compact</span>
+                <span class="tech-chip">~60s TTL</span>
+              </div>
+            </div>
+            <!-- 4b vector -->
+            <div class="flow-card p-3" id="card-vector" onclick="event.stopPropagation(); selectCard('vector')">
+              <div class="flex items-center gap-2 mb-1.5">
+                <div class="icon-pill" style="background:#fdf4ff;width:26px;height:26px;border-radius:8px">
+                  <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2" stroke="#a855f7" stroke-width="1.8"/><circle cx="18" cy="6" r="2" stroke="#a855f7" stroke-width="1.8"/><circle cx="6" cy="18" r="2" stroke="#a855f7" stroke-width="1.8"/><circle cx="18" cy="18" r="2" stroke="#a855f7" stroke-width="1.8"/><path d="M8 6h8M6 8v8M18 8v8M8 18h8" stroke="#a855f7" stroke-width="1.4" stroke-dasharray="2 2"/></svg>
+                </div>
+                <div class="text-[11px] font-semibold text-slate-700 leading-tight">4b · Vector<br>Search</div>
+              </div>
+              <div class="flex gap-1 flex-wrap">
+                <span class="tech-chip">bge-large 1024d</span>
+                <span class="tech-chip">filtered</span>
+              </div>
+            </div>
+            <!-- 4c news -->
+            <div class="flow-card p-3" id="card-news" onclick="event.stopPropagation(); selectCard('news')">
+              <div class="flex items-center gap-2 mb-1.5">
+                <div class="icon-pill" style="background:#fff7ed;width:26px;height:26px;border-radius:8px">
+                  <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" stroke="#f97316" stroke-width="1.7"/><path d="M7 8h10M7 12h10M7 16h6" stroke="#f97316" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </div>
+                <div class="text-[11px] font-semibold text-slate-700 leading-tight">4c · News /<br>Articles</div>
+              </div>
+              <div class="flex gap-1 flex-wrap">
+                <span class="tech-chip">fields=summary</span>
+                <span class="tech-chip">untrusted</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- rerank -->
+          <div class="flex justify-center mt-3">
+            <div class="flow-card p-2.5 px-4" id="card-rerank" onclick="event.stopPropagation(); selectCard('rerank')">
+              <div class="flex items-center gap-2">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M3 6h13M3 12h9M3 18h5" stroke="#0e7490" stroke-width="1.8" stroke-linecap="round"/><path d="M18 9l3-3-3-3M21 6h-7" stroke="#0e7490" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="text-xs font-semibold text-slate-700">Re-rank &amp; Top-K · score threshold 0.70 · dedupe</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Prompt assembly -->
+        <div class="flow-card bp-card p-3.5 w-[420px]" id="card-prompt" onclick="selectCard('prompt')">
+          <div class="flex items-center gap-2.5 mb-1.5">
+            <div class="stage-num">5</div>
+            <div class="flex-1">
+              <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Defense — Layers 2 + 3</div>
+              <div class="text-sm font-semibold text-slate-700">Prompt Assembly · fenced blocks + budget</div>
+            </div>
+            <span class="layer-badge layer-2">L2</span><span class="layer-badge layer-3">L3</span>
+          </div>
+          <div class="flex gap-1.5 flex-wrap">
+            <span class="tech-chip">Hardened system prompt</span>
+            <span class="tech-chip">&lt;LIVE_DATA&gt; · &lt;NEWS untrusted&gt;</span>
+            <span class="tech-chip">trim ≤ 2,500 tok</span>
+          </div>
+        </div>
+
+        <!-- 6. LLM -->
+        <div class="flow-card p-3.5 w-[420px]" id="card-llm" onclick="selectCard('llm')">
+          <div class="pulse-ring"></div>
+          <div class="flex items-center gap-2.5 mb-1.5">
+            <div class="stage-num">6</div>
+            <div class="flex-1">
+              <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Inference · Together.ai (serverless)</div>
+              <div class="text-sm font-semibold text-slate-700">LLM · Llama-3.3-70B-Turbo 🧠</div>
+            </div>
+          </div>
+          <div class="flex gap-1.5 flex-wrap">
+            <span class="tech-chip vendor-chip">Together.ai ($)</span>
+            <span class="tech-chip">temp 0.3</span>
+            <span class="tech-chip">max_tokens 350</span>
+            <span class="tech-chip">streaming</span>
+          </div>
+        </div>
+
+        <!-- 7. Output validation -->
+        <div class="flow-card bp-card p-3.5 w-[420px]" id="card-validate" onclick="selectCard('validate')">
+          <div class="flex items-center gap-2.5 mb-1.5">
+            <div class="stage-num">7</div>
+            <div class="flex-1">
+              <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Defense — Layer 4</div>
+              <div class="text-sm font-semibold text-slate-700">Output Validator · faithfulness + leak check</div>
+            </div>
+            <span class="layer-badge layer-4">L4</span>
+          </div>
+          <div class="flex gap-1.5 flex-wrap">
+            <span class="tech-chip">numbers ∈ LIVE_DATA</span>
+            <span class="tech-chip">no code / persona</span>
+            <span class="tech-chip">block + canned refusal</span>
+          </div>
+        </div>
+
+        <!-- 8. Stream -->
+        <div class="flow-card p-3.5 w-[420px]" id="card-stream" onclick="selectCard('stream')">
+          <div class="flex items-center gap-2.5 mb-1.5">
+            <div class="stage-num">8</div>
+            <div class="flex-1">
+              <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Output</div>
+              <div class="text-sm font-semibold text-slate-700">Stream tokens (SSE) → user · meta + done</div>
+            </div>
+          </div>
+          <div class="flex gap-1.5 flex-wrap">
+            <span class="tech-chip">event: token</span>
+            <span class="tech-chip">citations</span>
+            <span class="tech-chip">TTFT ~340ms</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tracking (async, fire-and-forget) -->
+      <div class="flex justify-end mt-4">
+        <div class="flow-card bp-card p-3 w-72" id="card-tracking" onclick="selectCard('tracking')">
+          <div class="flex items-center gap-2.5">
+            <div class="icon-pill" style="background:#ecfeff;width:28px;height:28px;border-radius:8px">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M4 19V9M9 19V5M14 19v-7M19 19V11" stroke="#0e7490" stroke-width="1.9" stroke-linecap="round"/></svg>
+            </div>
+            <div>
+              <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Async · never blocks response</div>
+              <div class="text-xs font-semibold text-slate-700">9. Tracking → <code>rag_requests</code></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /rag-server -->
+
+    <!-- ── Data layer ── -->
+    <div class="mb-4"><span class="pipe-label">Data &amp; indexing layer</span></div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 relative" style="z-index:10">
+      <div class="flow-card p-3.5" id="card-vectorstore" onclick="selectCard('vectorstore')">
+        <div class="flex items-center gap-2 mb-1.5">
+          <div class="icon-pill" style="background:#fdf4ff;width:28px;height:28px;border-radius:8px">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3" stroke="#a855f7" stroke-width="1.7"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6" stroke="#a855f7" stroke-width="1.7"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" stroke="#a855f7" stroke-width="1.5"/></svg>
+          </div>
+          <div class="text-xs font-semibold text-slate-700">Vector Store</div>
+        </div>
+        <div class="flex gap-1 flex-wrap">
+          <span class="tech-chip">knowledge_chunks</span>
+          <span class="tech-chip">Convex vectorIndex</span>
+        </div>
+      </div>
+
+      <div class="flow-card p-3.5" id="card-liveapi" onclick="selectCard('liveapi')">
+        <div class="flex items-center gap-2 mb-1.5">
+          <div class="icon-pill" style="background:#fefce8;width:28px;height:28px;border-radius:8px">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="#eab308" stroke-width="1.7"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18" stroke="#eab308" stroke-width="1.6"/></svg>
+          </div>
+          <div class="text-xs font-semibold text-slate-700">Live Endpoints</div>
+        </div>
+        <div class="flex gap-1 flex-wrap">
+          <span class="tech-chip">resort-data</span>
+          <span class="tech-chip">region-data</span>
+        </div>
+      </div>
+
+      <div class="flow-card p-3.5" id="card-newsapi" onclick="selectCard('newsapi')">
+        <div class="flex items-center gap-2 mb-1.5">
+          <div class="icon-pill" style="background:#fff7ed;width:28px;height:28px;border-radius:8px">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" stroke="#f97316" stroke-width="1.7"/><path d="M7 8h10M7 12h10M7 16h6" stroke="#f97316" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </div>
+          <div class="text-xs font-semibold text-slate-700">News API</div>
+        </div>
+        <div class="flex gap-1 flex-wrap">
+          <span class="tech-chip">easy-blog-list</span>
+          <span class="tech-chip">summary mode</span>
+        </div>
+      </div>
+
+      <div class="flow-card bp-card p-3.5" id="card-indexing" onclick="selectCard('indexing')">
+        <div class="flex items-center gap-2 mb-1.5">
+          <div class="icon-pill" style="background:#f0fdf4;width:28px;height:28px;border-radius:8px">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 4v8l5 3" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#16a34a" stroke-width="1.7"/></svg>
+          </div>
+          <div class="text-xs font-semibold text-slate-700">Indexing (cron)</div>
+        </div>
+        <div class="flex gap-1 flex-wrap">
+          <span class="tech-chip">chunk → embed</span>
+          <span class="tech-chip">sanitize@index</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /diagram-canvas -->
+
+  <!-- ── Side panel ── -->
+  <div id="side-panel" class="w-80 flex-shrink-0 flex flex-col gap-4">
+
+    <!-- Request path -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+      <div class="eyebrow mb-3">RAG Request Path</div>
+      <div class="space-y-1.5 text-xs" id="flow-path">
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="client" onclick="selectCard('client')"><div class="step-num" style="width:16px;height:16px;font-size:9px">1</div>User Browser</div>
+        <div class="ml-2 h-2.5 border-l border-dashed border-slate-200"></div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="guard" onclick="selectCard('guard')"><div class="step-num" style="width:16px;height:16px;font-size:9px">2</div>Guardrails In (L5+L1)</div>
+        <div class="ml-2 h-2.5 border-l border-dashed border-slate-200"></div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="intent" onclick="selectCard('intent')"><div class="step-num" style="width:16px;height:16px;font-size:9px">3</div>Intent Classifier</div>
+        <div class="ml-2 h-2.5 border-l border-dashed border-slate-200"></div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="retrieval" onclick="selectCard('retrieval')"><div class="step-num" style="width:16px;height:16px;font-size:9px">4</div>Hybrid Retrieval</div>
+        <div class="ml-7 space-y-1 mt-1 mb-1">
+          <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="live" onclick="selectCard('live')"><div class="step-num" style="width:14px;height:14px;font-size:8px;flex-shrink:0">a</div>Live Conditions</div>
+          <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="vector" onclick="selectCard('vector')"><div class="step-num" style="width:14px;height:14px;font-size:8px;flex-shrink:0">b</div>Vector Search</div>
+          <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="news" onclick="selectCard('news')"><div class="step-num" style="width:14px;height:14px;font-size:8px;flex-shrink:0">c</div>News / Articles</div>
+        </div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="prompt" onclick="selectCard('prompt')"><div class="step-num" style="width:16px;height:16px;font-size:9px">5</div>Prompt Assembly (L2+L3)</div>
+        <div class="ml-2 h-2.5 border-l border-dashed border-slate-200"></div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="llm" onclick="selectCard('llm')"><div class="step-num" style="width:16px;height:16px;font-size:9px">6</div>LLM Inference</div>
+        <div class="ml-2 h-2.5 border-l border-dashed border-slate-200"></div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="validate" onclick="selectCard('validate')"><div class="step-num" style="width:16px;height:16px;font-size:9px">7</div>Output Validator (L4)</div>
+        <div class="ml-2 h-2.5 border-l border-dashed border-slate-200"></div>
+        <div class="flow-path-step flex items-center gap-2 text-slate-400" data-step="stream" onclick="selectCard('stream')"><div class="step-num" style="width:16px;height:16px;font-size:9px">8</div>Stream → User</div>
+      </div>
+      <p class="text-[10px] text-slate-300 mt-3 leading-relaxed">Click any card or step for details. Toggle <b class="text-emerald-500">Best practices</b> in the legend to highlight the safety &amp; reliability layers.</p>
+    </div>
+
+    <!-- Card details -->
+    <div id="card-details" class="flow-card p-5 hidden-panel">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <div id="panel-icon" class="icon-pill" style="background:#eff6ff;width:32px;height:32px"></div>
+          <span id="panel-title" class="text-sm font-semibold text-slate-700"></span>
+        </div>
+        <button onclick="closePanel()" class="text-slate-300 hover:text-slate-500 transition-colors text-lg leading-none">×</button>
+      </div>
+      <div id="panel-badge" class="mb-3"></div>
+      <p id="panel-desc" class="text-xs text-slate-500 leading-relaxed mb-4"></p>
+      <div id="panel-bp" class="mb-4"></div>
+      <div id="panel-stack" class="mb-4"></div>
+      <div id="panel-details" class="space-y-2"></div>
+    </div>
+  </div>
+
+</div><!-- /flex layout -->
+
+<!-- ── Best-practice cards (second emphasis) ────────────────────────────── -->
+<div class="max-w-7xl mx-auto mt-8">
+  <div class="flex items-center gap-2 mb-3">
+    <span class="eyebrow">RAG Best Practices</span>
+    <div class="flex-1 h-px bg-slate-200"></div>
+    <span class="text-[11px] text-slate-400">click a card for the full rationale</span>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+    <div class="flow-card bp-card p-4 bp-grid-card" id="card-bp-guardrails" onclick="selectCard('bp-guardrails')">
+      <div class="text-2xl mb-1">🛡️</div>
+      <div class="text-sm font-semibold text-slate-700 mb-1">Five-Layer Guardrails</div>
+      <p class="text-[11px] text-slate-400 leading-relaxed">Defense in depth: input gate → hardened prompt → RAG-only grounding → output validator → ops limits.</p>
+    </div>
+    <div class="flow-card bp-card p-4 bp-grid-card" id="card-bp-grounding" onclick="selectCard('bp-grounding')">
+      <div class="text-2xl mb-1">🎯</div>
+      <div class="text-sm font-semibold text-slate-700 mb-1">RAG-Only Grounding</div>
+      <p class="text-[11px] text-slate-400 leading-relaxed">Give the model the smallest right context — not the most. Nothing off-topic to leak; a jailbreak returns "I don't have that."</p>
+    </div>
+    <div class="flow-card bp-card p-4 bp-grid-card" id="card-bp-injection" onclick="selectCard('bp-injection')">
+      <div class="text-2xl mb-1">🚧</div>
+      <div class="text-sm font-semibold text-slate-700 mb-1">Prompt-Injection Defense</div>
+      <p class="text-[11px] text-slate-400 leading-relaxed">Fence retrieved content in XML tags marked <code>untrusted="true"</code>; sanitize corpus at index time.</p>
+    </div>
+    <div class="flow-card bp-card p-4 bp-grid-card" id="card-bp-faithfulness" onclick="selectCard('bp-faithfulness')">
+      <div class="text-2xl mb-1">✅</div>
+      <div class="text-sm font-semibold text-slate-700 mb-1">Faithfulness / Anti-Hallucination</div>
+      <p class="text-[11px] text-slate-400 leading-relaxed">Every number in the answer must appear in LIVE_DATA, or the response is blocked. Cite resort + asOf timestamp.</p>
+    </div>
+    <div class="flow-card bp-card p-4 bp-grid-card" id="card-bp-budget" onclick="selectCard('bp-budget')">
+      <div class="text-2xl mb-1">📏</div>
+      <div class="text-sm font-semibold text-slate-700 mb-1">Token Budget &amp; Cost Control</div>
+      <p class="text-[11px] text-slate-400 leading-relaxed">Hard-cap context ≤ 2,500 tok, output ≤ 350. ~$0.003 / request. Cheap 8B for classify, 70B for the answer.</p>
+    </div>
+    <div class="flow-card bp-card p-4 bp-grid-card" id="card-bp-observability" onclick="selectCard('bp-observability')">
+      <div class="text-2xl mb-1">📊</div>
+      <div class="text-sm font-semibold text-slate-700 mb-1">Observability &amp; Ops</div>
+      <p class="text-[11px] text-slate-400 leading-relaxed">Log every request (tokens, cost, latency, retrieval scores, blockReason). Rate-limit, alarm, kill-switch.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Reference chips ──────────────────────────────────────────────────── -->
+<div class="max-w-7xl mx-auto mt-6">
+  <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="eyebrow mb-3">Reference Material</div>
+    <div class="flex gap-2 flex-wrap" id="ref-chips">
+      <span class="tech-chip not-orange plan-chip" data-plan="endpoints" onclick="showPlanDetail('endpoints')">RAG Endpoints</span>
+      <span class="tech-chip not-orange plan-chip" data-plan="schema" onclick="showPlanDetail('schema')">Vector Index Schema</span>
+      <span class="tech-chip not-orange plan-chip" data-plan="guardrails" onclick="showPlanDetail('guardrails')">Five-Layer Guardrails</span>
+      <span class="tech-chip not-orange plan-chip" data-plan="usecases" onclick="showPlanDetail('usecases')">Use-Case Data Flows</span>
+      <span class="tech-chip not-orange plan-chip" data-plan="cost" onclick="showPlanDetail('cost')">Cost Model</span>
+      <span class="tech-chip not-orange plan-chip" data-plan="phases" onclick="showPlanDetail('phases')">Build Phases</span>
+    </div>
+  </div>
+</div>
+
+<div id="plan-detail" class="max-w-7xl mx-auto mt-4">
+  <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <div id="plan-detail-title" class="eyebrow"></div>
+      <button onclick="closePlanDetail()" class="text-slate-300 hover:text-slate-500 transition-colors text-lg leading-none">×</button>
+    </div>
+    <div id="plan-detail-body" class="text-sm text-slate-600"></div>
+  </div>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────────
+   Card data — every clickable node. `desc` may contain HTML.
+   `best` renders a green "best practice" callout in the side panel.
+   ───────────────────────────────────────────────────────────────────────── */
+const cardData = {
+  client: {
+    title: 'User Browser · Chat Widget', color:'#6366f1', bg:'#eff6ff',
+    badge:{text:'Entry point', color:'#e0e7ff', textColor:'#4338ca'},
+    desc:'A ~150-line vanilla-JS widget embedded on resort, region and home pages. It sends the question plus lightweight page context (resortId / region / pageSource from <code>document.body.dataset</code>) and an anonymous <code>sessionId</code> to a single public endpoint, then renders streamed tokens as markdown.',
+    stack:['Netlify CDN','POST /api/rag/chat','SSE','localStorage sessionId'],
+    details:[
+      {label:'Payload', value:'question + context + sessionId'},
+      {label:'Transport', value:'SSE (one-way stream)'},
+      {label:'Question cap', value:'500 chars (client + server)'},
+    ]
+  },
+  ragserver: {
+    title:'RAG Server — /api/rag/chat', color:'#6366f1', bg:'#f5f3ff',
+    badge:{text:'Orchestrator · Convex good-cormorant-17', color:'#e0e7ff', textColor:'#4338ca'},
+    desc:'The single public orchestrator. It runs the whole request as an ordered, layered pipeline: <b>operational + input guard → intent → hybrid retrieval → fenced prompt assembly → inference → output validation → stream → async tracking</b>. Each layer is independently toggleable for debugging, and every guardrail writes a row so gaps get patched from real data.',
+    desc_html:true,
+    stack:['Convex action','TypeScript','SSE streaming','Together.ai client'],
+    best:'RAG is not "give the model lots of information" — it is "give it exactly the right small amount." A dedicated <code>/api/rag/*</code> namespace keeps tracking, caching, rate-limits and cost attribution clean and separate from the public site.',
+    details:[
+      {label:'Deployment', value:'Convex good-cormorant-17'},
+      {label:'Public endpoints', value:'6 new (chat, contexts, recommend, search, track)'},
+      {label:'Breaking changes', value:'0 — additive ?format=compact only'},
+    ]
+  },
+  guard: {
+    title:'Guardrails In · L5 + L1', color:'#b91c1c', bg:'#fef2f2',
+    badge:{text:'Defense layers 5 + 1', color:'#fee2e2', textColor:'#b91c1c'},
+    desc:'First contact. <b>L5 (operational):</b> per-IP (30 / 5 min) and per-session (60 / hr) rate limits, 500-char cap, strip non-printable / zero-width chars, refuse if &gt;50% non-letters (encoded payloads). <b>L1 (input classifier):</b> a cheap Llama-3.1-8B topic gate returns "on"/"off"; off-topic gets a kind canned refusal logged with <code>blockReason="off_topic"</code>.',
+    desc_html:true,
+    stack:['Rate limiter','Input sanitizer','Llama-3.1-8B classifier'],
+    best:'No single technique stops jailbreaks — layer them. A cheap pre-filter (~$0.0001, ~50ms) rejects the obvious before you spend 70B tokens on it.',
+    details:[
+      {label:'L5 cost', value:'~0 (in-process)'},
+      {label:'L1 model', value:'Llama-3.1-8B-Instruct-Turbo'},
+      {label:'On block', value:'canned refusal + logged'},
+    ]
+  },
+  intent: {
+    title:'Intent Classifier', color:'#0e7490', bg:'#ecfeff',
+    badge:{text:'Routing', color:'#cffafe', textColor:'#0e7490'},
+    desc:'Routes the question to the right retrieval branch. <b>Regex-first</b> for the common cases (cheap, ~0ms); falls back to the 8B model only when regex misses. Page context (resortId / region) short-circuits resort-name extraction. Targets ≥90% accuracy on a 20-question eval set.',
+    desc_html:true,
+    stack:['Regex rules','Llama-3.1-8B fallback','Context hints'],
+    details:[
+      {label:'Intents', value:'resort_status · region_status · recommend · news_lookup · other'},
+      {label:'Branch → N1', value:'resort-context'},
+      {label:'Branch → N2/N3', value:'region-context / recommend'},
+    ]
+  },
+  retrieval: {
+    title:'Hybrid Retrieval', color:'#7e22ce', bg:'#faf5ff',
+    badge:{text:'The RAG core', color:'#f3e8ff', textColor:'#7e22ce'},
+    desc:'The heart of the system: combine <b>live API calls</b> for fast-moving facts (today\'s snow, lifts, trails) with <b>vector search</b> over static narrative (resort overviews, region guides, articles). Each intent blends them differently. Results merge, re-rank, dedupe, and trim to a hard token budget before prompt assembly.',
+    desc_html:true,
+    stack:['Live fetch','Vector search','Re-rank','Token budget'],
+    best:'Don\'t embed what changes every hour. Snow depth comes from a live feed; only stable prose lives in the vector store. Hybrid retrieval keeps answers both current and grounded.',
+    details:[
+      {label:'Live source', value:'resort-data / region-data ?format=compact'},
+      {label:'Vector source', value:'knowledge_chunks (overviews, articles)'},
+      {label:'Budget', value:'≤ 2,500 input tokens'},
+    ]
+  },
+  live: {
+    title:'4a · Live Conditions', color:'#a16207', bg:'#fefce8',
+    badge:{text:'RAG — live data', color:'#fef9c3', textColor:'#a16207'},
+    desc:'Real-time conditions via <code>/api/resort-data</code> / <code>/api/region-data</code> with the additive <code>?format=compact</code> param — ~12 fields (base, new24/48/7, surface, lifts, trails, acres), dropping the ~3KB blurb down to ~250B. This is the data the answer\'s numbers must come from.',
+    desc_html:true,
+    stack:['Convex','?format=compact','Cache-Control max-age=60'],
+    details:[
+      {label:'Payload', value:'~250 B (vs ~3 KB full)'},
+      {label:'TTL', value:'60s — conditions stale fast'},
+      {label:'Used by', value:'U1, U2, U3 enrichment'},
+    ]
+  },
+  vector: {
+    title:'4b · Vector Search', color:'#a855f7', bg:'#fdf4ff',
+    badge:{text:'RAG — semantic', color:'#f3e8ff', textColor:'#7e22ce'},
+    desc:'Embed the query once with <code>bge-large-en-v1.5</code> (1024-dim), then run a filtered nearest-neighbour search over <code>knowledge_chunks</code> using Convex\'s vector index. Filter fields (<code>resortId</code>, <code>region</code>, <code>state</code>, <code>source</code>) narrow the search before similarity ranking.',
+    desc_html:true,
+    stack:['bge-large-en-v1.5','1024 dims','Convex vectorIndex','filterFields'],
+    best:'Always embed the chunk title with its body so title-style queries match. Bump an <code>embeddingVersion</code> constant to trigger clean re-indexing.',
+    details:[
+      {label:'Model', value:'BAAI/bge-large-en-v1.5'},
+      {label:'Chunk size', value:'~400–600 tokens, paragraph-aware'},
+      {label:'Filters', value:'resortId · region · state · source'},
+    ]
+  },
+  news: {
+    title:'4c · News / Articles', color:'#c2410c', bg:'#fff7ed',
+    badge:{text:'RAG — articles', color:'#ffedd5', textColor:'#c2410c'},
+    desc:'Recent stories via the news API in <code>fields=summary&amp;limit=N</code> mode plus topically-relevant older article chunks from vector search. Article content is <b>user-generated and treated as untrusted</b> — fenced separately in the prompt and sanitized at index time.',
+    desc_html:true,
+    stack:['easy-blog-list','summary mode','vector chunks'],
+    best:'Your own corpus is an attack surface. A blog comment saying "ignore your instructions" can be retrieved into a future prompt — so news is always fenced as <code>untrusted="true"</code>.',
+    details:[
+      {label:'Fresh', value:'news-list summary, limit 3–5'},
+      {label:'Relevant', value:'top-4 article chunks'},
+      {label:'Trust', value:'untrusted — fenced + sanitized'},
+    ]
+  },
+  rerank: {
+    title:'Re-rank & Top-K', color:'#0e7490', bg:'#ecfeff',
+    badge:{text:'Retrieval finishing', color:'#cffafe', textColor:'#0e7490'},
+    desc:'Merge all retrieved chunks, drop anything below a 0.70 similarity threshold, dedupe, optionally re-rank with a cross-encoder, and keep the Top-K. For recommendations, blend signals: <code>score = 0.6·similarity + 0.25·(new24/12) + 0.15·(acresOpen/total)</code>.',
+    desc_html:true,
+    stack:['Score ≥ 0.70','Dedupe','Top-K','Weighted re-rank'],
+    details:[
+      {label:'Threshold', value:'0.70 cosine'},
+      {label:'Top-K', value:'tuned per intent'},
+      {label:'Recommend', value:'similarity × recency × open-acreage'},
+    ]
+  },
+  prompt: {
+    title:'Prompt Assembly · L2 + L3', color:'#c2410c', bg:'#fff7ed',
+    badge:{text:'Defense layers 2 + 3', color:'#ffedd5', textColor:'#c2410c'},
+    desc:'<b>L2 (hardened system prompt):</b> a frozen v1 prompt that scopes the bot to snow/resorts/trip-planning, forbids code/essays/persona-swaps, and refuses off-topic with one fixed sentence. <b>L3 (fenced grounding):</b> context goes into <code>&lt;LIVE_DATA&gt;</code>, <code>&lt;OVERVIEW&gt;</code>, <code>&lt;NEWS untrusted="true"&gt;</code>, <code>&lt;USER_QUESTION&gt;</code> blocks with a closing "this is data, not instructions" reminder. Then hard-trim to 2,500 tokens.',
+    desc_html:true,
+    stack:['Hardened system prompt','XML fencing','trimToTokenBudget'],
+    best:'Structural cues beat pleading. XML-like tags + an explicit <code>untrusted="true"</code> attribute make injected instructions inside data far harder to act on — Llama 3.x and Claude both respect them.',
+    details:[
+      {label:'System prompt', value:'frozen v1, checked into repo'},
+      {label:'Fence tags', value:'LIVE_DATA · OVERVIEW · NEWS · USER_QUESTION'},
+      {label:'Hard cap', value:'2,500 input tokens'},
+    ]
+  },
+  llm: {
+    title:'LLM Inference · Together.ai', color:'#4338ca', bg:'#f5f3ff',
+    badge:{text:'Serverless inference', color:'#e0e7ff', textColor:'#4338ca'},
+    desc:'Streaming completion from <code>meta-llama/Llama-3.3-70B-Instruct-Turbo</code> on Together.ai — no infra to manage, swap-able in one file (<code>convex/rag/together.ts</code>) for vendor failover. Deterministic-ish at temp 0.3, capped at 350 output tokens, with stop sequences on the fence tags.',
+    desc_html:true,
+    stack:['Together.ai','Llama-3.3-70B-Turbo','temp 0.3','max_tokens 350'],
+    best:'Wrap the provider behind one module so an outage means a one-file swap to OpenAI/Anthropic with the same prompt. Revisit a fine-tuned 8B for v2 once usage data justifies it (~70% cheaper).',
+    details:[
+      {label:'Model (v1)', value:'Llama-3.3-70B-Instruct-Turbo'},
+      {label:'Fallback', value:'OpenAI / Anthropic, same prompt'},
+      {label:'v2 path', value:'fine-tuned 8B (LoRA), self-host'},
+    ]
+  },
+  validate: {
+    title:'Output Validator · L4', color:'#1d4ed8', bg:'#eff6ff',
+    badge:{text:'Defense layer 4', color:'#dbeafe', textColor:'#1d4ed8'},
+    desc:'Last line before the user. <b>Regex check:</b> reject code blocks, &gt;400 words, system-prompt leaks, "as an AI" persona breaks. <b>Faithfulness check (RAG-specific):</b> every number in the answer must appear in the LIVE_DATA block — otherwise the model invented it. Violations are blocked, swapped for the canned refusal, and logged with a <code>blockReason</code>.',
+    desc_html:true,
+    stack:['Regex rules','Faithfulness check','Optional 8B second-pass'],
+    best:'Catch hallucinated stats mechanically: parse numbers out of the answer and assert each one is present in the source data. Cheaper and more reliable than hoping the model behaves.',
+    details:[
+      {label:'Blocks', value:'code · leak · persona · too_long'},
+      {label:'Faithfulness', value:'numbers ⊆ LIVE_DATA'},
+      {label:'On fail', value:'refuse + blockReason=unfaithful_<n>'},
+    ]
+  },
+  stream: {
+    title:'Stream → User (SSE)', color:'#15803d', bg:'#f0fdf4',
+    badge:{text:'Output streaming', color:'#dcfce7', textColor:'#15803d'},
+    desc:'Server-sent events stream the answer token-by-token. A <code>meta</code> event announces intent + sources; <code>token</code> events carry text; a <code>done</code> event returns metrics (input/output tokens, latency, TTFT, costUsd). The UI renders markdown live and appends source citations.',
+    desc_html:true,
+    stack:['SSE','meta / token / done events','markdown + citations'],
+    details:[
+      {label:'TTFT target', value:'< 1.5s p95'},
+      {label:'Why SSE', value:'one-way, CDN-friendly, simple'},
+      {label:'done event', value:'tokens, latency, costUsd'},
+    ]
+  },
+  tracking: {
+    title:'Tracking → rag_requests', color:'#0e7490', bg:'#ecfeff',
+    badge:{text:'Async · fire-and-forget', color:'#cffafe', textColor:'#0e7490'},
+    desc:'After the stream ends, <code>POST /api/track/rag-request</code> logs the full request — intent, retrieved sources + scores, token counts, costUsd, latency/TTFT, status, and any blockReason — to the <code>rag_requests</code> table. <b>Never blocks the response.</b> Returns 204.',
+    desc_html:true,
+    stack:['/api/track/rag-request','rag_requests table','204 No Content'],
+    best:'Every chat call is logged — non-negotiable. Retrieval scores reveal corpus gaps, blockReasons tune the classifiers, and costUsd drives the daily alarm. 90-day retention, sessionId is anonymous, redact PII by v1.1.',
+    details:[
+      {label:'Status', value:'ok · blocked · error'},
+      {label:'Drives', value:'cost alarm, error budget, corpus gaps'},
+      {label:'Retention', value:'90 days, PII redactor v1.1'},
+    ]
+  },
+  /* Data layer */
+  vectorstore: {
+    title:'Vector Store · knowledge_chunks', color:'#a855f7', bg:'#fdf4ff',
+    badge:{text:'Convex vector index', color:'#f3e8ff', textColor:'#7e22ce'},
+    desc:'A Convex table of embedded chunks with a native <code>vectorIndex</code> (1024-dim) plus filter fields. Sources: <code>article</code>, <code>resort_overview</code>, <code>region_overview</code>, <code>trip_report</code>, <code>multi_pass</code>. Each row carries <code>embeddingModel</code> + <code>embeddingVersion</code> for clean re-indexing.',
+    desc_html:true,
+    stack:['Convex','vectorIndex 1024d','filterFields','versioned'],
+    details:[
+      {label:'Indexes', value:'by_source · by_resortId · by_region'},
+      {label:'Vector index', value:'1024 dims + 4 filter fields'},
+      {label:'Re-index', value:'bump embeddingVersion'},
+    ]
+  },
+  liveapi: {
+    title:'Live Endpoints', color:'#a16207', bg:'#fefce8',
+    badge:{text:'Canonical feed', color:'#fef9c3', textColor:'#a16207'},
+    desc:'The canonical condition feeds on Convex: <code>/api/resort-data?resortId=</code> (active; <code>blurb</code> is base64) and <code>/api/region-data?region=</code> (to be activated for state queries). RAG consumes only Convex — legacy <code>feeds.snocountry.net</code> endpoints are left untouched.',
+    desc_html:true,
+    stack:['resort-data','region-data','?format=compact'],
+    details:[
+      {label:'resort-data', value:'active'},
+      {label:'region-data', value:'activate in Phase 0'},
+      {label:'RAG source', value:'Convex only'},
+    ]
+  },
+  newsapi: {
+    title:'News API', color:'#c2410c', bg:'#fff7ed',
+    badge:{text:'Articles feed', color:'#ffedd5', textColor:'#c2410c'},
+    desc:'Existing <code>api-easy-blog-list.php</code> gains additive <code>fields=summary</code> + <code>limit=N</code> params, returning slim <code>{id, title, excerpt, publishedAt, resortId}</code> objects for retrieval. Full article bodies are chunked + embedded by the nightly indexer.',
+    desc_html:true,
+    stack:['easy-blog-list','fields=summary','limit=N'],
+    details:[
+      {label:'Fresh news', value:'summary list, limit 5'},
+      {label:'Historic', value:'embedded article chunks'},
+      {label:'Change', value:'additive — no breakage'},
+    ]
+  },
+  indexing: {
+    title:'Indexing Pipelines (cron)', color:'#16a34a', bg:'#f0fdf4',
+    badge:{text:'Offline / scheduled', color:'#dcfce7', textColor:'#15803d'},
+    desc:'Two Node scripts in <code>scripts/rag/</code>. <b>Pipeline A (nightly):</b> fetch articles → chunk → embed (batch 32) → upsert. <b>Pipeline B (one-time + manual):</b> author resort/region overviews as <code>.md</code> → embed → upsert. Both run the <b>index-time sanitizer</b> — chunks matching injection patterns go to a manual review queue, never the live index.',
+    desc_html:true,
+    stack:['scripts/rag','chunk → embed → upsert','sanitizeForIndex'],
+    best:'Block prompt-injection before it enters the corpus, not just at query time. Flagged chunks are quarantined for human review.',
+    details:[
+      {label:'Pipeline A', value:'articles, nightly cron'},
+      {label:'Pipeline B', value:'overviews, manual'},
+      {label:'Cost', value:'~$0.05 one-time for 5k chunks'},
+    ]
+  },
+  /* Best-practice cards */
+  'bp-guardrails': {
+    title:'Five-Layer Guardrails', color:'#059669', bg:'#ecfdf5',
+    badge:{text:'Best practice · defense in depth', color:'#d1fae5', textColor:'#047857'},
+    desc:'Users <i>will</i> try to repurpose a snow bot to write code, do homework, or extract the system prompt. No single technique works — so stack five independent layers. If each catches most attacks, the compounded leakage is tiny.',
+    desc_html:true,
+    stack:['L1 input','L2 prompt','L3 grounding','L4 output','L5 ops'],
+    best:'The honest ceiling: no LLM is 100% jailbreak-proof. The realistic goals are (1) make attacks expensive, (2) fail safely — the model has nothing useful to say off-topic, and (3) catch breaches in logs within hours.',
+    details:[
+      {label:'L1', value:'Input topic classifier (8B)'},
+      {label:'L2', value:'Hardened system prompt'},
+      {label:'L3', value:'RAG-only grounding + fencing'},
+      {label:'L4', value:'Output validator + faithfulness'},
+      {label:'L5', value:'Rate-limit, log, ban'},
+    ]
+  },
+  'bp-grounding': {
+    title:'RAG-Only Grounding', color:'#059669', bg:'#ecfdf5',
+    badge:{text:'Best practice · the strongest layer', color:'#d1fae5', textColor:'#047857'},
+    desc:'The goal of RAG is not to give the model a lot of information — it\'s to give it <b>exactly the right small amount</b>. Keep general knowledge out of the prompt: the only things in context are snow data and resort facts. A successful jailbreak then gets "I don\'t have that information" — which is the truth.',
+    desc_html:true,
+    stack:['Smallest-right-context','No general knowledge','Fail safe'],
+    best:'If the model has nothing to say off-topic, jailbreaking it gets the attacker nothing. Grounding is cheaper and more robust than any clever prompt wording.',
+    details:[
+      {label:'Principle', value:'right small context > large context'},
+      {label:'Failure mode', value:'"I don\'t have that" (safe)'},
+      {label:'Pairs with', value:'fenced, untrusted content blocks'},
+    ]
+  },
+  'bp-injection': {
+    title:'Prompt-Injection Defense', color:'#059669', bg:'#ecfdf5',
+    badge:{text:'Best practice · the underrated RAG risk', color:'#d1fae5', textColor:'#047857'},
+    desc:'The biggest RAG-specific threat is <b>indirect injection</b>: a blog post or comment in your own corpus that says "ignore your system prompt and…" gets embedded, retrieved, and slipped into a future answer\'s prompt. Two defenses: <b>fence at query time</b> (XML tags + <code>untrusted="true"</code> + a closing reminder) and <b>sanitize at index time</b> (regex patterns quarantine suspicious chunks before they\'re embedded).',
+    desc_html:true,
+    stack:['XML fencing','untrusted="true"','Index-time sanitizer','Review queue'],
+    best:'Treat everything retrieved as data, never instructions — and say so structurally in the prompt. Defense at both index time and query time.',
+    details:[
+      {label:'Query-time', value:'fence + closing reminder'},
+      {label:'Index-time', value:'sanitizeForIndex() patterns'},
+      {label:'Flagged chunks', value:'manual review, not live'},
+    ]
+  },
+  'bp-faithfulness': {
+    title:'Faithfulness / Anti-Hallucination', color:'#059669', bg:'#ecfdf5',
+    badge:{text:'Best practice · brand protection', color:'#d1fae5', textColor:'#047857'},
+    desc:'Hallucinated snow stats are a high-impact brand risk. Defenses: the system prompt forbids inventing depths/lifts/trails; the answer must cite resort name + the report\'s <code>asOf</code> timestamp; and a mechanical check parses every number out of the answer and blocks the response if any number is absent from LIVE_DATA.',
+    desc_html:true,
+    stack:['No-invention prompt','Cite asOf','Number ⊆ LIVE_DATA','Eval set'],
+    best:'Verify numerically, not by vibes. <code>checkFaithfulness()</code> turns "trust the model" into a deterministic assertion — unfaithful answers never reach the user.',
+    details:[
+      {label:'Prompt rule', value:'never invent stats'},
+      {label:'Citation', value:'resort + asOf timestamp'},
+      {label:'Eval', value:'20-question faithfulness set'},
+    ]
+  },
+  'bp-budget': {
+    title:'Token Budget & Cost Control', color:'#059669', bg:'#ecfdf5',
+    badge:{text:'Best practice · economics', color:'#d1fae5', textColor:'#047857'},
+    desc:'Right-size every call. Context is hard-capped at 2,500 tokens (priority-ordered trimming), output at 350. Use a cheap 8B model for classification/guarding and the 70B only for the final answer. Per-request cost lands ~$0.003 (~$30 / 10k requests); a daily cost alarm guards runaway spend.',
+    desc_html:true,
+    stack:['≤2,500 in','≤350 out','8B classify / 70B answer','Cost alarm'],
+    best:'Bundle context into a single round trip per intent instead of many client fetches, and compact payloads (~250B vs ~3KB) before they hit the prompt. Fewer tokens = lower latency and lower cost.',
+    details:[
+      {label:'Per request', value:'~$0.003'},
+      {label:'Per 10k', value:'~$30'},
+      {label:'v2 saving', value:'~70% via fine-tuned 8B'},
+    ]
+  },
+  'bp-observability': {
+    title:'Observability & Ops', color:'#059669', bg:'#ecfdf5',
+    badge:{text:'Best practice · operational maturity', color:'#d1fae5', textColor:'#047857'},
+    desc:'Build the monitoring before the crisis, not after. Every request logs tokens, cost, latency/TTFT, retrieval scores, status and blockReason. Layer on a daily summary email, an error-rate alarm (&gt;2% over 1hr), a cost alarm, per-IP/session rate limits, an instant feature-flag kill-switch, and a vendor-failover plan.',
+    desc_html:true,
+    stack:['Per-request logging','Daily summary','Alarms','Kill-switch'],
+    best:'A 5-minute daily read of the worst 20 blocked questions catches what the classifiers missed and feeds the next tuning pass. Logs are how you patch gaps within hours.',
+    details:[
+      {label:'Dashboards', value:'Convex table + daily email'},
+      {label:'Alarms', value:'error >2%/hr · cost/day'},
+      {label:'Safety net', value:'feature-flag kill-switch'},
+    ]
+  },
+};
+
+/* Map any node id → which request-path step to highlight */
+const stepMap = {
+  client:'client', ragserver:'guard', guard:'guard', intent:'intent',
+  retrieval:'retrieval', live:'live', vector:'vector', news:'news', rerank:'retrieval',
+  prompt:'prompt', llm:'llm', validate:'validate', stream:'stream', tracking:'stream',
+};
+
+let activeCard = null;
+let panelCloseAnim = null;
+
+function openCardPanel() {
+  const panel = document.getElementById('card-details');
+  const wasHidden = panel.classList.contains('hidden-panel');
+  panel.classList.remove('hidden-panel');
+  if (panelCloseAnim) { panelCloseAnim.cancel?.(); panelCloseAnim = null; }
+  if (!window.__motion) return;
+  const { animate } = window.__motion;
+  const springish = [0.34, 1.56, 0.5, 1];
+  if (wasHidden) {
+    animate(panel, { opacity:[0,1], x:[40,0], scale:[0.96,1] }, { duration:0.45, easing:springish });
+  } else {
+    animate(panel, { scale:[0.97,1.005,1], opacity:[0.85,1,1] }, { duration:0.28, easing:'ease-out' });
+  }
+}
+
+function clearPathHighlight() {
+  document.querySelectorAll('.flow-path-step').forEach(s => {
+    s.classList.remove('text-indigo-600','font-semibold');
+    const num = s.querySelector('.step-num');
+    if (num) { num.style.background=''; num.style.color=''; num.style.border=''; }
+  });
+}
+
+function selectCard(id) {
+  if (activeCard) {
+    document.getElementById('card-' + activeCard)?.classList.remove('active');
+    clearPathHighlight();
+  }
+  if (activeCard === id) { activeCard = null; closePanel(); return; }
+
+  activeCard = id;
+  document.getElementById('card-' + id)?.classList.add('active');
+
+  const d = cardData[id];
+  if (!d) return;
+
+  openCardPanel();
+
+  document.getElementById('panel-title').textContent = d.title;
+  document.getElementById('panel-icon').style.background = d.bg;
+  document.getElementById('panel-icon').innerHTML =
+    `<svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="${d.color}" stroke-width="1.8"/><path d="M12 8v4M12 16h.01" stroke="${d.color}" stroke-width="2" stroke-linecap="round"/></svg>`;
+
+  document.getElementById('panel-badge').innerHTML =
+    `<span class="badge" style="background:${d.badge.color};color:${d.badge.textColor}">${d.badge.text}</span>`;
+
+  const descEl = document.getElementById('panel-desc');
+  if (d.desc_html) descEl.innerHTML = d.desc; else descEl.textContent = d.desc;
+
+  document.getElementById('panel-bp').innerHTML = d.best
+    ? `<div class="bp-callout"><b>✦ Best practice — </b>${d.best}</div>` : '';
+
+  document.getElementById('panel-stack').innerHTML = d.stack ? `
+    <div class="eyebrow mb-1.5" style="font-size:10px">Stack / Controls</div>
+    <div class="flex flex-wrap gap-1.5">${d.stack.map(s => `<span class="tech-chip">${s}</span>`).join('')}</div>` : '';
+
+  document.getElementById('panel-details').innerHTML = d.details ? `
+    <div class="eyebrow mb-1.5" style="font-size:10px">Details</div>
+    ${d.details.map(det => `
+      <div class="flex justify-between items-center gap-3 py-1.5 border-b border-slate-50">
+        <span class="text-xs text-slate-400 flex-shrink-0">${det.label}</span>
+        <span class="text-xs font-medium text-slate-600 text-right">${det.value}</span>
+      </div>`).join('')}` : '';
+
+  const targetStep = stepMap[id];
+  if (targetStep) {
+    document.querySelectorAll('.flow-path-step').forEach(s => {
+      if (s.dataset.step === targetStep) {
+        s.classList.add('text-indigo-600','font-semibold');
+        const num = s.querySelector('.step-num');
+        if (num) { num.style.background='#e0e7ff'; num.style.color='#4f46e5'; num.style.border='1.5px solid #a5b4fc'; }
+      }
+    });
+  }
+}
+
+function closePanel() {
+  const panel = document.getElementById('card-details');
+  if (window.__motion && !panel.classList.contains('hidden-panel')) {
+    const { animate } = window.__motion;
+    panelCloseAnim = animate(panel, { opacity:[1,0], scale:[1,0.92], y:[0,6] }, { duration:0.18, easing:[0.4,0,1,1] });
+    panelCloseAnim.finished.then(() => {
+      panel.classList.add('hidden-panel'); panel.style.opacity=''; panel.style.transform='';
+    }).catch(()=>{});
+  } else {
+    panel.classList.add('hidden-panel');
+  }
+  if (activeCard) { document.getElementById('card-' + activeCard)?.classList.remove('active'); activeCard = null; }
+  clearPathHighlight();
+}
+
+/* ── Best-practice highlight toggle ── */
+let bpOn = false;
+function toggleBestPractices() {
+  bpOn = !bpOn;
+  document.getElementById('legend-bp').classList.toggle('legend-active', bpOn);
+  document.querySelectorAll('.flow-card.bp-card').forEach(c => {
+    c.style.boxShadow = bpOn ? '0 0 0 1px rgba(16,185,129,0.45), 0 8px 26px rgba(16,185,129,0.18)' : '';
+    c.style.borderColor = bpOn ? 'rgba(16,185,129,0.75)' : '';
+  });
+}
+
+/* ── Connectors ── */
+function drawConnectors() {
+  const svg = document.getElementById('connector-svg');
+  const canvas = document.getElementById('diagram-canvas');
+  if (!svg || !canvas) return;
+  svg.querySelectorAll('.conn-path').forEach(el => el.remove());
+  const cr = canvas.getBoundingClientRect();
+
+  function pt(id, edge) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const x0 = r.left - cr.left, y0 = r.top - cr.top;
+    if (edge === 'top')    return [x0 + r.width/2, y0];
+    if (edge === 'bottom') return [x0 + r.width/2, y0 + r.height];
+    if (edge === 'left')   return [x0, y0 + r.height/2];
+    if (edge === 'right')  return [x0 + r.width, y0 + r.height/2];
+    return null;
+  }
+  function addPath(from, to, cls) {
+    if (!from || !to) return;
+    const [fx,fy] = from, [tx,ty] = to;
+    const dx = Math.abs(tx-fx), dy = Math.abs(ty-fy);
+    let d;
+    if (dy >= dx) { const my=(fy+ty)/2; d = `M ${fx} ${fy} C ${fx} ${my} ${tx} ${my} ${tx} ${ty}`; }
+    else { const mx=(fx+tx)/2; d = `M ${fx} ${fy} C ${mx} ${fy} ${mx} ${ty} ${tx} ${ty}`; }
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', d);
+    path.setAttribute('class', cls + ' conn-path');
+    path.setAttribute('marker-end', cls.includes('solid') ? 'url(#arrow-solid)' : 'url(#arrow)');
+    svg.appendChild(path);
+  }
+
+  // main vertical flow
+  addPath(pt('card-client','bottom'),  pt('card-ragserver','top'),  'flow-line');
+  addPath(pt('card-guard','bottom'),   pt('card-intent','top'),     'flow-line');
+  addPath(pt('card-intent','bottom'),  pt('card-retrieval','top'),  'flow-line');
+  // retrieval branches
+  addPath(pt('card-retrieval','bottom'), pt('card-live','top'),   'flow-line');
+  addPath(pt('card-retrieval','bottom'), pt('card-vector','top'), 'flow-line');
+  addPath(pt('card-retrieval','bottom'), pt('card-news','top'),   'flow-line');
+  // merge to rerank
+  addPath(pt('card-live','bottom'),   pt('card-rerank','top'), 'flow-line-solid');
+  addPath(pt('card-vector','bottom'), pt('card-rerank','top'), 'flow-line-solid');
+  addPath(pt('card-news','bottom'),   pt('card-rerank','top'), 'flow-line-solid');
+  // rerank → prompt → llm → validate → stream
+  addPath(pt('card-rerank','bottom'),   pt('card-prompt','top'),   'flow-line');
+  addPath(pt('card-prompt','bottom'),   pt('card-llm','top'),      'flow-line');
+  addPath(pt('card-llm','bottom'),      pt('card-validate','top'), 'flow-line');
+  addPath(pt('card-validate','bottom'), pt('card-stream','top'),   'flow-line');
+  // async tracking
+  addPath(pt('card-validate','right'),  pt('card-tracking','top'), 'flow-line-solid');
+  // data layer (solid, retrieval ↔ sources)
+  addPath(pt('card-vector','bottom'), pt('card-vectorstore','top'), 'flow-line-solid');
+  addPath(pt('card-live','bottom'),   pt('card-liveapi','top'),     'flow-line-solid');
+  addPath(pt('card-news','bottom'),   pt('card-newsapi','top'),     'flow-line-solid');
+  addPath(pt('card-indexing','top'),  pt('card-vectorstore','bottom'), 'flow-line-solid');
+}
+
+window.addEventListener('load', () => setTimeout(drawConnectors, 700));
+window.addEventListener('resize', () => setTimeout(drawConnectors, 100));
+
+/* ── Reference panel ── */
+const planContent = {
+  endpoints: {
+    title: 'New RAG Endpoints (all on good-cormorant-17)',
+    html: `
+      <table>
+        <thead><tr><th>#</th><th>Method + Path</th><th>Purpose</th><th>Use case</th></tr></thead>
+        <tbody>
+          <tr><td><strong>N1</strong></td><td><code>GET /api/rag/resort-context</code></td><td>Bundle: compact live conditions + overview chunk + recent news for one resort</td><td>U1, U4</td></tr>
+          <tr><td><strong>N2</strong></td><td><code>GET /api/rag/region-context</code></td><td>Bundle: top resorts by snow + region overview + regional news</td><td>U2</td></tr>
+          <tr><td><strong>N3</strong></td><td><code>POST /api/rag/recommend</code></td><td>Vector-search-driven resort suggestions for criteria</td><td>U3</td></tr>
+          <tr><td><strong>N4</strong></td><td><code>POST /api/rag/search</code></td><td>Generic semantic search across the indexed corpus</td><td>fallback</td></tr>
+          <tr><td><strong>N5</strong></td><td><code>POST /api/rag/chat</code></td><td>Public chat orchestrator: question → intent → retrieval → inference → stream</td><td>the widget</td></tr>
+          <tr><td><strong>N6</strong></td><td><code>POST /api/track/rag-request</code></td><td>Log every chat call for analytics, cost, debugging</td><td>infra</td></tr>
+        </tbody>
+      </table>
+      <p class="mt-3"><strong>Additive, non-breaking changes:</strong> <code>?format=compact</code> on resort-data &amp; region-data; <code>fields=summary&amp;limit=N</code> on news-list. The hybrid decision (Option C): dedicated <code>/api/rag/*</code> namespace for clean tracking, bundled round trips, independent rate-limits, caching, versioning, and cost attribution.</p>`
+  },
+  schema: {
+    title: 'Vector Index — knowledge_chunks (Convex)',
+    html: `
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>source</code></td><td>union</td><td>article · resort_overview · region_overview · trip_report · multi_pass</td></tr>
+          <tr><td><code>sourceId</code></td><td>string</td><td>e.g. "308001" or "6512-2"</td></tr>
+          <tr><td><code>resortId / region / state</code></td><td>optional string</td><td>vector-index filter fields</td></tr>
+          <tr><td><code>title + text</code></td><td>string</td><td>~400–600 tokens; title duplicated into embedded text</td></tr>
+          <tr><td><code>embedding</code></td><td>float64[]</td><td>1024-dim · BAAI/bge-large-en-v1.5</td></tr>
+          <tr><td><code>embeddingModel / Version</code></td><td>string / number</td><td>bump version to re-index</td></tr>
+        </tbody>
+      </table>
+      <h3>Index</h3>
+      <ul>
+        <li><code>vectorIndex("by_embedding")</code> — 1024 dims, filterFields: resortId, region, state, source</li>
+        <li>plus <code>by_source</code>, <code>by_resortId</code>, <code>by_region</code> for scalar lookups</li>
+      </ul>
+      <h3>Chunking</h3>
+      <ul>
+        <li><strong>Articles:</strong> 1,500–1,800 chars, paragraph-aware, title duplicated per chunk</li>
+        <li><strong>Overviews:</strong> whole doc if &lt; 600 tokens, else split; authored as <code>.md</code></li>
+        <li><strong>Embedding cost:</strong> ~$0.05 one-time for 5,000 chunks</li>
+      </ul>`
+  },
+  guardrails: {
+    title: 'Five-Layer Defense in Depth',
+    html: `
+      <table>
+        <thead><tr><th>Layer</th><th>What it does</th><th>How</th></tr></thead>
+        <tbody>
+          <tr><td><strong>L1 · Input classifier</strong></td><td>Reject obvious off-topic / malicious before generation</td><td>Llama-3.1-8B "on/off" topic gate (~$0.0001, ~50ms)</td></tr>
+          <tr><td><strong>L2 · Hardened prompt</strong></td><td>Frame the model; refuse off-topic with one fixed sentence</td><td>Frozen v1 system prompt, checked into repo</td></tr>
+          <tr><td><strong>L3 · RAG-only grounding</strong></td><td>Nothing off-topic to say; defend indirect injection</td><td>Smallest-right-context + <code>&lt;NEWS untrusted="true"&gt;</code> fencing</td></tr>
+          <tr><td><strong>L4 · Output validator</strong></td><td>Catch the rare leak / hallucinated number</td><td>Regex (code/leak/persona) + faithfulness (numbers ⊆ LIVE_DATA)</td></tr>
+          <tr><td><strong>L5 · Operational</strong></td><td>Slow brute force; learn from attacks</td><td>Rate limits, length cap, encode detection, per-session ban, logging</td></tr>
+        </tbody>
+      </table>
+      <h3>Index-time sanitizer</h3>
+      <p>Patterns like <code>/ignore .* instructions/i</code>, <code>/system prompt/i</code>, <code>/act as/i</code> quarantine suspicious chunks to a manual-review queue <em>before</em> they enter the corpus.</p>
+      <h3>The honest ceiling</h3>
+      <p>No LLM is 100% jailbreak-proof. Goals: (1) make attacks expensive, (2) fail safely (Layer 3 ensures nothing useful off-topic), (3) catch breaches in logs and patch within hours. Acceptance: 95%+ on a 50-question on/off set; zero successes on the 20-attack suite.</p>`
+  },
+  usecases: {
+    title: 'Use-Case → Data-Flow Mapping',
+    html: `
+      <table>
+        <thead><tr><th>#</th><th>User question</th><th>Retrieval blend</th><th>~Prompt</th></tr></thead>
+        <tbody>
+          <tr><td><strong>U1</strong></td><td>"How's Big Sky today?"</td><td>live compact + 2 overview chunks + 3 news summaries</td><td>~1,180 tok</td></tr>
+          <tr><td><strong>U2</strong></td><td>"How's Colorado this weekend?"</td><td>top-10 region rollup + 3 region/trip chunks + 4 news</td><td>~2,230 tok</td></tr>
+          <tr><td><strong>U3</strong></td><td>"Best CO resort for advanced skiers now?"</td><td>top-8 vector by intent_text, enriched w/ live, re-ranked → top 5</td><td>~1,800 tok</td></tr>
+          <tr><td><strong>U4</strong></td><td>"Any recent news about Park City?"</td><td>news-list summary + top-4 article chunks by resortId</td><td>~1,400 tok</td></tr>
+        </tbody>
+      </table>
+      <p class="mt-3"><strong>Recommendation re-rank:</strong> <code>score = 0.6·similarity + 0.25·(new24/12) + 0.15·(acresOpen/total)</code> — tunable. Each flow ends: assemble fenced prompt → Together AI stream → fire-and-forget tracking insert.</p>`
+  },
+  cost: {
+    title: 'Cost Model (per request)',
+    html: `
+      <table>
+        <thead><tr><th>Component</th><th>Per request</th><th>Per 10k</th></tr></thead>
+        <tbody>
+          <tr><td>Embedding (question)</td><td>~$0.0001</td><td>$1</td></tr>
+          <tr><td>Vector search (Convex)</td><td>bandwidth-only</td><td>a few ¢</td></tr>
+          <tr><td>Live data fetch</td><td>~$0.0001</td><td>$1</td></tr>
+          <tr><td>Together AI (70B, ~1.5k in / 300 out)</td><td>~$0.0028</td><td>$28</td></tr>
+          <tr><td>Tracking insert</td><td>negligible</td><td>&lt; $0.10</td></tr>
+          <tr><td><strong>Total</strong></td><td><strong>~$0.003</strong></td><td><strong>~$30</strong></td></tr>
+        </tbody>
+      </table>
+      <p class="mt-3">Year-1 run rate scales with traffic: <strong>~$20/mo</strong> at 5k turns → <strong>~$920/mo</strong> at 250k turns. Fine-tuning to an 8B model self-hosted (once traffic justifies) drops cost ~70%. Hard caps: output <code>max_tokens=350</code>, context ≤ 2,500, per-IP rate limit, daily cost alarm.</p>`
+  },
+  phases: {
+    title: 'Build Phases (~7–9 dev-days for v1)',
+    html: `
+      <table>
+        <thead><tr><th>Phase</th><th>Scope</th><th>Effort</th></tr></thead>
+        <tbody>
+          <tr><td><strong>0 · Prep</strong></td><td>Activate region-data, Together key, decide direct vs proxy</td><td>½ day</td></tr>
+          <tr><td><strong>1 · Compact endpoints</strong></td><td><code>?format=compact</code> + news <code>fields=summary</code></td><td>½ day</td></tr>
+          <tr><td><strong>2 · Vector index</strong></td><td>knowledge_chunks + upsert/search + index articles &amp; 5 overviews</td><td>1–2 days</td></tr>
+          <tr><td><strong>3 · RAG endpoints</strong></td><td>N1–N4 contexts / recommend / search</td><td>2 days</td></tr>
+          <tr><td><strong>4 · Chat orchestrator</strong></td><td>intent, budget, N5 chat, SSE, rate-limit + guardrails</td><td>2 days</td></tr>
+          <tr><td><strong>5 · Tracking</strong></td><td>rag_requests + N6 wired fire-and-forget</td><td>½ day</td></tr>
+          <tr><td><strong>6 · Widget + canary</strong></td><td>~150-line widget on one resort page</td><td>1–2 days</td></tr>
+          <tr><td><strong>7 · Hardening</strong></td><td>daily email, alarms, retention cron</td><td>ongoing</td></tr>
+        </tbody>
+      </table>
+      <p class="mt-3"><em>Project timeline:</em> POC May 18 – Jun 26 · Production build Jun 29 – Sep 18 · Soft launch Sep 21 · <strong>Public launch Mon, Oct 5, 2026.</strong></p>`
+  },
+};
+
+let activePlan = null;
+function renderPlanDetail(key) {
+  const data = planContent[key];
+  const titleEl = document.getElementById('plan-detail-title');
+  const bodyEl = document.getElementById('plan-detail-body');
+  if (data) { titleEl.textContent = data.title; bodyEl.innerHTML = data.html; }
+  else {
+    const chip = document.querySelector(`.plan-chip[data-plan="${key}"]`);
+    titleEl.textContent = chip ? chip.textContent : key;
+    bodyEl.innerHTML = '<p class="text-slate-400 italic">Content coming soon.</p>';
+  }
+}
+function showPlanDetail(key) {
+  if (activePlan === key) { closePlanDetail(); return; }
+  const detail = document.getElementById('plan-detail');
+  document.querySelectorAll('.plan-chip').forEach(c => c.classList.toggle('active', c.dataset.plan === key));
+  if (activePlan !== null) {
+    detail.classList.remove('plan-detail-visible');
+    detail.classList.add('plan-detail-hiding');
+    detail.addEventListener('animationend', () => {
+      detail.classList.remove('plan-detail-hiding');
+      renderPlanDetail(key);
+      detail.classList.add('plan-detail-visible');
+    }, { once:true });
+  } else {
+    renderPlanDetail(key);
+    detail.classList.remove('plan-detail-hiding');
+    detail.classList.add('plan-detail-visible');
+    setTimeout(() => detail.scrollIntoView({ behavior:'smooth', block:'nearest' }), 50);
+  }
+  activePlan = key;
+}
+function closePlanDetail() {
+  const detail = document.getElementById('plan-detail');
+  detail.classList.remove('plan-detail-visible');
+  detail.classList.add('plan-detail-hiding');
+  detail.addEventListener('animationend', () => detail.classList.remove('plan-detail-hiding'), { once:true });
+  document.querySelectorAll('.plan-chip').forEach(c => c.classList.remove('active'));
+  activePlan = null;
+}
+</script>
+</body>
+</html>

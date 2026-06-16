@@ -1,0 +1,148 @@
+STATEMENT OF WORK (SOW)
+This Statement of Work (“SOW”) is entered into under the Master Services Agreement between:
+Client: SnoCountry, LLC
+Contractor: [Your Name] 
+Project Name: SnoCountry AI Chatbot
+
+1. PROJECT OVERVIEW
+An AI powered chatbot embedded on SnoCountry.com that answers questions about ski conditions, resort recommendations, and recent news — like a ChatGPT that only knows skiing and pulls from our live data.
+
+2. PROJECT OBJECTIVES
+[Objective 1] Deliver a production AI chatbot embedded on SnoCountry.com that answers ski-conditions, resort-recommendation, and recent-news questions, grounded in SnoCountry's live data via Retrieval-Augmented Generation (RAG) so answers reflect current conditions rather than guesses.
+[Objective 2] Validate feasibility through a 6-week proof of concept that proves the bot answers well, fast, and cheaply on real SnoCountry data — passing the four POC gates: acceptable quality (>=80% of eval questions rated "good"), measurable fine-tuning benefit, model portability across providers (avoiding vendor lock-in), and cost under ~$0.01 per turn.
+[Objective 3] Build a hardened, on-brand chat experience with five-layer safety guardrails, a jailbreak test suite, sponsor disclosure, and content-lead-reviewed refusal copy — not a generic ChatGPT bolt-on.
+[Objective 4] Implement "smart cards" (entity highlighting) that render live resort conditions, lift status, events, relevant articles, and sponsor cards alongside answers, sourced from existing SnoCountry endpoints.
+[Objective 5] Establish operational maturity from day one — monitoring dashboards, cost alerts, an instant kill-switch (feature flag), on-call runbooks, and a vendor-failover plan — built before launch, not after a crisis.
+[Objective 6] Launch safely via a controlled rollout — canary-page soft launch with a staged traffic ramp (10% -> 100%, then additional pages), gated by a public-launch decision based on soft-launch metrics.
+[Objective 7] Stand up a reusable RAG backbone — the corpus plus chat orchestrator that becomes the foundation for future AI features (e.g., internal editorial tooling, partner widget).
+
+
+3. IN-SCOPE DELIVERABLES
+Contractor will deliver:
+
+Core chatbot system
+[Deliverable 1] Proof-of-concept (POC) report — 6-week validation answering the four POC questions (quality, fine-tuning benefit, provider portability, cost-per-turn), with a documented go/pivot/defer recommendation and model/provider selection.
+[Deliverable 2] Production RAG chat engine — the chat orchestrator with intent classification, token-budget enforcement, streaming responses (SSE), and a knowledge corpus of the top ~50 resort overviews plus indexed news articles, grounded in live SnoCountry data.
+[Deliverable 3] Embedded chat UI widget — a chat panel that drops onto resort and snow-report pages, with collapsed/expanded states, mobile bottom-sheet UX, and full accessibility (keyboard navigation, screen-reader labels, reduced-motion support).
+
+AI system / RAG / chatbot / automation components
+[Deliverable 4] Five-layer safety guardrails + jailbreak test suite — on-topic enforcement, abuse prevention, forbidden-topics handling (medical/avalanche/gambling), and content-lead-reviewed refusal copy; passes 100% on critical-severity jailbreak tests.
+[Deliverable 5] Continual-learning pipeline — feedback capture (thumbs up/down), curation cadence, and monthly LoRA fine-tuning with model versioning and instant rollback.
+
+Admin dashboard / analytics / integrations
+[Deliverable 6] "Smart cards" entity-highlighting integration — live resort, lift-status, event, article, and sponsor cards rendered alongside answers, hydrated from existing SnoCountry endpoints (/api/resort-data, /api/ads, etc.).
+[Deliverable 7] Monitoring & operations toolkit — dashboards (turns/min, error rate, block rate, latency, daily cost, faithfulness), cost alerts, on-call runbooks, an instant kill-switch feature flag, a vendor-failover plan, and a "chat replay" admin/debug tool.
+[Deliverable 8] Ad/sponsor tracking integration — sponsor-card impressions and clicks attributed to chat (?source=chat) via existing tracking endpoints, with clear "Sponsored" disclosure.
+
+Launch deliverables
+[Deliverable 9] Stress test + infrastructure decision — k6 load tests across ramp/burst/steady-state/single-resort scenarios, run on both the pay-per-use API and dedicated-hardware paths, with a documented pay-per-use-API vs. dedicated-GPU recommendation.
+[Deliverable 10] Soft launch + public rollout — staged canary-page deployment with traffic ramp, gated by soft-launch metrics, culminating in site-wide public launch.
+
+4. OUT OF SCOPE
+The following are explicitly excluded unless added via written change order:
+Additional features not listed in Section 3
+Revenue, conversion, or performance guarantees
+Unlimited revisions or redesigns
+Unspecified integrations or platforms
+Enterprise SLA guarantees unless explicitly stated
+Voice/video/multimodal features unless specified
+5. TECHNICAL ASSUMPTIONS
+This project assumes:
+Use of third-party AI services (e.g., LLM APIs)
+Hosting on [Client/Contractor-approved platform]
+System performance depends on third-party providers
+Requirements are based on expected usage provided by Client
+
+6. MILESTONES & TIMELINE
+
+Phase 1 – Proof of Concept (POC) (Weeks 1–6)
+Goal: Validate quality, latency, cost, and provider portability on real SnoCountry data.
+Deliverables:
+POC Report
+[ ] Test and identify optimal AI model(s) (e.g: Qwen vs Gemma vs Llama)
+[ ] Level of quality that indicates pathway to launch level standard
+[ ] Model portability across providers (avoiding vendor lock-in)
+[ ] Cost structure of turn (turn = one user message + one AI response)
+Code:
+[ ] Vector indexed corpus (5 resort overviews + last season articles)
+[ ] Minimal chat CLI
+[ ] 20-question eval set
+[ ] Fine-tuning experiment
+[ ] Portability test (Together AI → Vast AI or other third party inference provider) Inference
+meaning: Large Language Model used for AI response
+
+Phase 2 – Production Build: Foundation Hardening (Phase A) (Weeks 7–10)
+Goal: Build the RAG engine end-to-end at production quality, no public exposure.
+Deliverables:
+[ ] Database schemas + API endpoints (resort/region context, recommend, search)
+[ ] Chat orchestrator with five guardrail layers and streams answers
+[ ] Chat history tracking (database + endpoints)
+[ ] Corpus (resort overviews) expanded to top 50 resorts
+[ ] Bulk of fine-tuning, providing improved accuracy and relevancy.
+
+Phase 3 – Production Build: Chat UI + Smart Cards (Phase B) (Weeks 11–14)
+Goal: Build the user-visible product.
+Deliverables:
+[ ] Chat widget + SSE streaming
+[ ] Entity-highlighting "smart cards" (resort, article, sponsor, event)
+[ ] Live data hydration (actual snow conditions resort/state)
+[ ] Accessibility + mobile bottom-sheet UX
+[ ] Deployment to one canary page
+
+Phase 4 – Stress Test + Infrastructure Decision (Phase C) (Weeks 16–18, overlaps Phase B)
+Goal: Load-test and decide the hosting path.
+Deliverables:
+[ ] Stress scripts (e.g. K6) (ramp/burst/steady-state/single-resort flood) run on both API and
+dedicated-hardware paths
+[ ] Project monthly cost: pay-per-use vs. dedicated-GPU. Identify threshold range to to switch
+[ ] Kill-switch (shutdown AI chat if costs escalating ) + rollback rehearsal
+
+
+Phase 5 – Soft Launch (Weeks 19–20)
+Goal: Controlled traffic ramp.
+Deliverables:
+[ ] Canary-page rollout (Initial single page, up to n pages)
+[ ] Internal SnoCountry team testing to test project objectives and in-scope deliverables plus
+identify potential future add-ons
+[ ] Adjust UI and RAG as needed
+[ ] Daily conversation monitoring
+[ ] Widget fine tuning for non-SnoCountry pages
+
+
+Phase 6 – Public Launch + Iterate/Scale (Week 21+)
+Goal: Site-wide rollout and ongoing improvement.
+Deliverables:
+[ ] Public launch, Identify website coverage
+[ ] Continual-learning pipeline (monthly fine-tuning)
+[ ] Monitoring/on-call sustaining
+
+7. ACCEPTANCE CRITERIA
+Each milestone is considered complete when:
+Deliverables listed for that phase are functional and demonstrated
+No critical blocking defects exist
+Client provides written approval OR 5 business days pass without written objection
+
+8. PAYMENT SCHEDULE
+Total Fee: $[Amount]
+Payment Structure:
+[ % upfront]
+[Milestone payments]
+[Final payment upon completion]
+Invoices due within [7–15] days.
+
+9. CLIENT RESPONSIBILITIES
+Client agrees to provide:
+Required access to systems and APIs
+Timely feedback and approvals
+Required data/content
+Single point of contact
+Delays in Client input may extend timeline.
+
+10. OPTIONAL ADD-ONS
+Available upon request:
+Advanced analytics dashboards
+Additional integrations
+Ongoing maintenance retainer
+AI model optimization
+Hosting and infrastructure management
+

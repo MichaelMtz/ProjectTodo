@@ -1,0 +1,225 @@
+:root {
+  /* Neutral, light surfaces (lighter take on the sno-cms warm palette) */
+  --bg-app: #f7f7f6;
+  --bg-sidebar: #fbfbfa;
+  --bg-card: #ffffff;
+  --bg-sunken: #f0f0ee;
+  --border-subtle: #ececea;
+  --border-strong: #e0e0dd;
+
+  --text-primary: #2a2a28;
+  --text-secondary: #6c6c68;
+  --text-muted: #a4a49f;
+
+  --accent: #5b9bbd;
+  --accent-ink: #3f7d9e;
+  --accent-wash: #e9f1f6;
+
+  --danger: #c0594b;
+  --danger-wash: #f7e8e5;
+
+  /* Column / status accents */
+  --col-todo: #9b9791;
+  --col-progress: #8a6fc0;
+  --col-review: #5b9bbd;
+  --col-done: #4a9d7f;
+
+  --prio-low: #8aa0a8;
+  --prio-medium: #5b9bbd;
+  --prio-high: #df8a4f;
+  --prio-critical: #c0594b;
+
+  --radius-sm: 7px;
+  --radius: 11px;
+  --radius-lg: 16px;
+
+  --shadow-card: 0 1px 2px rgba(40, 40, 38, 0.04), 0 1px 0 rgba(40, 40, 38, 0.02);
+  --shadow-pop: 0 8px 28px -6px rgba(40, 40, 38, 0.14), 0 2px 6px rgba(40, 40, 38, 0.05);
+  --shadow-drag: 0 18px 40px -8px rgba(40, 40, 38, 0.26), 0 4px 10px rgba(40, 40, 38, 0.1);
+
+  --header-h: 60px;
+  --sidebar-w: 248px;
+
+  --font-display: "Fraunces Variable", Georgia, serif;
+  --font-ui: "Hanken Grotesk Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  background-color: var(--bg-app);
+  background-image: radial-gradient(rgba(40, 40, 38, 0.015) 1px, transparent 1px);
+  background-size: 4px 4px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  margin: 0;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d9d9d4;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c8c8c2;
+  background-clip: padding-box;
+}
+
+/* ---- Reusable atoms ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 550;
+  transition: background 0.14s, border-color 0.14s, box-shadow 0.14s, transform 0.1s;
+}
+.btn:hover {
+  background: var(--bg-sunken);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(63, 125, 158, 0.35);
+}
+.btn--primary:hover {
+  background: var(--accent-ink);
+}
+.btn--ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.btn--ghost:hover {
+  background: var(--bg-sunken);
+}
+.btn--danger {
+  color: var(--danger);
+  border-color: transparent;
+  background: transparent;
+}
+.btn--danger:hover {
+  background: var(--danger-wash);
+}
+
+.input {
+  height: 38px;
+  width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.14s, box-shadow 0.14s;
+}
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  transition: background 0.14s, color 0.14s;
+}
+.icon-btn:hover {
+  background: var(--bg-sunken);
+  color: var(--text-primary);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+/* ---- Password field with show/hide toggle ---- */
+.password-field {
+  position: relative;
+}
+.password-field .input {
+  padding-right: 42px;
+}
+.password-toggle {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  height: 38px;
+  width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.password-toggle:hover {
+  color: var(--text-primary);
+}

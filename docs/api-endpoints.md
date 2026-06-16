@@ -1,0 +1,14 @@
+# SnoCountry API endpoints
+- Individual resort conditions endpoint
+  - url: https://good-cormorant-17.convex.site/api/resort-data?resortId=${resortId}
+  - Note: field blurb is base64 encoded. To convert use atob()
+  - status: active
+  - return data: JSON object of resort conditions
+- State / Region resort conditions
+  - url:  https://good-cormorant-17.convex.site/api/region-data?region=${region}
+  - status: not active, 
+  - return data: JSON array of resort conditions 
+- News endpoint
+  - url: https://www.snow-country.com/resorts/api-easy-blog-list.php?action=news-home&lastID=${window.snoNewsLastPostID}
+  - status: active
+  - return data: JSON object, contains field: "stories" : array of articles

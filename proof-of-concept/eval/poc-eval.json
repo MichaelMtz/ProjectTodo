@@ -1,0 +1,347 @@
+{
+  "name": "POC Eval Set v1",
+  "version": "1.0.0",
+  "description": "20-question evaluation set for the SnoCountry chat POC. Covers all four use cases (U1-U4) defined in concepts/rag-plan.md Section 2. Pass condition: at least 80% of answers rated 'good' or 'excellent'.",
+  "useCases": {
+    "U1": "Single-resort conditions",
+    "U2": "State / region conditions",
+    "U3": "Recommendation",
+    "U4": "Relevant news"
+  },
+  "scoring": {
+    "rubric": {
+      "excellent": "All mustContainOneOf matched, none of mustNotContain present, faithful to retrieved data, on-brand tone, ends with follow-up, length within bounds.",
+      "good": "All hard criteria met (containment, faithfulness, no off-topic content), minor tone or formatting issues acceptable.",
+      "fair": "Answer is on-topic and not factually wrong, but misses key information or runs over maxWords.",
+      "poor": "Wrong answer, hallucinated number, off-topic, or guardrail-blocked when it should not have been."
+    },
+    "passThreshold": 0.80,
+    "criticalCriteria": [
+      "faithfulness",
+      "no_invented_numbers",
+      "no_guardrail_false_positive"
+    ]
+  },
+  "questions": [
+    {
+      "id": "E001",
+      "useCase": "U1",
+      "question": "How is Big Sky today?",
+      "context": { "resortId": "308001", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Big Sky", "base", "lifts", "trails"],
+        "mustNotContain": ["I don't know", "as an AI"],
+        "maxWords": 250,
+        "minWords": 30
+      },
+      "rubricNotes": "Foundation case for U1. Faithfulness critical. Any inch-or-percent value must appear in LIVE_DATA.",
+      "tags": ["live_data", "single_resort", "simple_phrasing"]
+    },
+    {
+      "id": "E002",
+      "useCase": "U1",
+      "question": "Are the lifts open at A-Basin?",
+      "context": { "resortId": "303001", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["lifts", "open", "running", "Arapahoe", "A-Basin"],
+        "mustNotContain": ["closed all", "completely closed"],
+        "maxWords": 200,
+        "minWords": 20
+      },
+      "rubricNotes": "Specific aspect (lifts only). Answer should be focused, not include trail counts unless directly relevant.",
+      "tags": ["live_data", "single_resort", "specific_aspect"]
+    },
+    {
+      "id": "E003",
+      "useCase": "U1",
+      "question": "What's the snow report for Park City Mountain?",
+      "context": { "resortId": "419002", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Park City", "base", "snow", "trails"],
+        "mustNotContain": [],
+        "maxWords": 280,
+        "minWords": 50
+      },
+      "rubricNotes": "Formal phrasing. Expect a comprehensive but concise report covering 3-5 key data points.",
+      "tags": ["live_data", "single_resort", "formal_phrasing"]
+    },
+    {
+      "id": "E004",
+      "useCase": "U1",
+      "question": "Did Vail get any new snow yesterday?",
+      "context": { "resortId": "303024", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Vail", "24", "new", "fresh"],
+        "mustNotContain": [],
+        "maxWords": 180,
+        "minWords": 20
+      },
+      "rubricNotes": "Time-specific (yesterday = 24h field). Answer should cite the new24 value or say it's not available.",
+      "tags": ["live_data", "single_resort", "time_specific", "numeric_ask"]
+    },
+    {
+      "id": "E005",
+      "useCase": "U1",
+      "question": "How deep is the base at Mammoth right now?",
+      "context": { "resortId": "619002", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Mammoth", "base", "inches", "depth"],
+        "mustNotContain": [],
+        "maxWords": 150,
+        "minWords": 15
+      },
+      "rubricNotes": "Pure numeric ask. Answer should lead with the base depth and as-of timestamp.",
+      "tags": ["live_data", "single_resort", "numeric_ask"]
+    },
+    {
+      "id": "E006",
+      "useCase": "U1",
+      "question": "Tell me about conditions at Wolf Creek.",
+      "context": { "resortId": "303023", "region": null, "pageSource": null },
+      "expected": {
+        "intent": "resort_status",
+        "sourcesUsed": ["live", "overview"],
+        "mustContainOneOf": ["Wolf Creek", "snow", "Colorado", "base"],
+        "mustNotContain": [],
+        "maxWords": 280,
+        "minWords": 50
+      },
+      "rubricNotes": "Casual phrasing. Expect blend of live conditions plus brief resort overview from vector store.",
+      "tags": ["live_data", "single_resort", "casual_phrasing"]
+    },
+    {
+      "id": "E007",
+      "useCase": "U2",
+      "question": "What's snow looking like in Colorado this weekend?",
+      "context": { "resortId": null, "region": "colorado", "pageSource": "region" },
+      "expected": {
+        "intent": "region_status",
+        "sourcesUsed": ["live", "overview"],
+        "mustContainOneOf": ["Colorado", "Wolf Creek", "Vail", "Breckenridge", "Arapahoe"],
+        "mustNotContain": [],
+        "maxWords": 320,
+        "minWords": 80
+      },
+      "rubricNotes": "State-level rollup. Answer should mention 2-4 specific resorts with current data, not be a generic 'Colorado is great' response.",
+      "tags": ["live_data", "region", "state", "time_specific"]
+    },
+    {
+      "id": "E008",
+      "useCase": "U2",
+      "question": "Where in Utah has the most snow this week?",
+      "context": { "resortId": null, "region": "utah", "pageSource": "region" },
+      "expected": {
+        "intent": "region_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Utah", "Alta", "Snowbird", "Park City", "Deer Valley", "Solitude"],
+        "mustNotContain": [],
+        "maxWords": 280,
+        "minWords": 50
+      },
+      "rubricNotes": "Ranked answer. Lead with the resort that has highest 7-day snowfall; cite the number.",
+      "tags": ["live_data", "region", "state", "ranking", "numeric_ask"]
+    },
+    {
+      "id": "E009",
+      "useCase": "U2",
+      "question": "How are the Rockies doing for snow right now?",
+      "context": { "resortId": null, "region": "rockies", "pageSource": null },
+      "expected": {
+        "intent": "region_status",
+        "sourcesUsed": ["live", "overview"],
+        "mustContainOneOf": ["Rockies", "Colorado", "Utah", "Wyoming", "Montana"],
+        "mustNotContain": [],
+        "maxWords": 320,
+        "minWords": 80
+      },
+      "rubricNotes": "Multi-state region rollup. Should reference resorts from at least 2 states.",
+      "tags": ["live_data", "region", "multi_state"]
+    },
+    {
+      "id": "E010",
+      "useCase": "U2",
+      "question": "Best fresh snow in the northeast?",
+      "context": { "resortId": null, "region": "north-east", "pageSource": null },
+      "expected": {
+        "intent": "region_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Killington", "Stowe", "Sugarloaf", "Whiteface", "Sunday River", "Stratton", "Vermont", "New Hampshire", "Maine"],
+        "mustNotContain": [],
+        "maxWords": 250,
+        "minWords": 40
+      },
+      "rubricNotes": "Region with implicit ranking ('best'). Top resort by new24 should lead.",
+      "tags": ["live_data", "region", "ranking"]
+    },
+    {
+      "id": "E011",
+      "useCase": "U2",
+      "question": "Compare Colorado and Utah snow conditions.",
+      "context": { "resortId": null, "region": null, "pageSource": null },
+      "expected": {
+        "intent": "region_status",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["Colorado", "Utah"],
+        "mustNotContain": [],
+        "maxWords": 350,
+        "minWords": 100
+      },
+      "rubricNotes": "Cross-state comparison. Answer must mention BOTH states with specific numbers; structured (e.g. side-by-side) format preferred.",
+      "tags": ["live_data", "comparison", "multi_state"]
+    },
+    {
+      "id": "E012",
+      "useCase": "U3",
+      "question": "Best Colorado resort for advanced skiers right now?",
+      "context": { "resortId": null, "region": "colorado", "pageSource": null },
+      "expected": {
+        "intent": "recommend",
+        "sourcesUsed": ["live", "overview"],
+        "mustContainOneOf": ["A-Basin", "Arapahoe", "Crested Butte", "Telluride", "Aspen Highlands", "Silverton", "Wolf Creek"],
+        "mustNotContain": ["beginner", "easy"],
+        "maxWords": 350,
+        "minWords": 80
+      },
+      "rubricNotes": "Should pick 1-2 resorts known for advanced terrain, justify with both terrain reputation (overview) AND current conditions (live).",
+      "tags": ["recommendation", "skill_level", "single_state"]
+    },
+    {
+      "id": "E013",
+      "useCase": "U3",
+      "question": "Where should I go skiing this weekend if I want powder?",
+      "context": { "resortId": null, "region": null, "pageSource": null },
+      "expected": {
+        "intent": "recommend",
+        "sourcesUsed": ["live"],
+        "mustContainOneOf": ["new", "fresh", "powder", "inches"],
+        "mustNotContain": ["I cannot recommend"],
+        "maxWords": 320,
+        "minWords": 80
+      },
+      "rubricNotes": "Open-ended recommendation. Answer must lead with whichever resort had highest new24/new48 in the live data.",
+      "tags": ["recommendation", "live_data", "open_ended"]
+    },
+    {
+      "id": "E014",
+      "useCase": "U3",
+      "question": "Family-friendly Colorado resort recommendation?",
+      "context": { "resortId": null, "region": "colorado", "pageSource": null },
+      "expected": {
+        "intent": "recommend",
+        "sourcesUsed": ["overview"],
+        "mustContainOneOf": ["Keystone", "Beaver Creek", "Steamboat", "Granby", "Copper", "family"],
+        "mustNotContain": ["expert", "extreme"],
+        "maxWords": 320,
+        "minWords": 80
+      },
+      "rubricNotes": "Vector-search-driven. Live conditions less important than terrain reputation (ski school, gentle terrain). Should justify with overview content.",
+      "tags": ["recommendation", "trip_planning", "vector_dominant"]
+    },
+    {
+      "id": "E015",
+      "useCase": "U3",
+      "question": "Which Lake Tahoe resort is best for snowboarding right now?",
+      "context": { "resortId": null, "region": null, "pageSource": null },
+      "expected": {
+        "intent": "recommend",
+        "sourcesUsed": ["live", "overview"],
+        "mustContainOneOf": ["Heavenly", "Northstar", "Palisades", "Sierra", "Boreal", "Tahoe"],
+        "mustNotContain": [],
+        "maxWords": 320,
+        "minWords": 80
+      },
+      "rubricNotes": "Sub-region (Tahoe) with activity preference. Should pick 1-2 Tahoe resorts and justify with current conditions.",
+      "tags": ["recommendation", "sub_region", "activity_preference"]
+    },
+    {
+      "id": "E016",
+      "useCase": "U3",
+      "question": "I have one day to ski in Utah. Where should I go?",
+      "context": { "resortId": null, "region": "utah", "pageSource": null },
+      "expected": {
+        "intent": "recommend",
+        "sourcesUsed": ["live", "overview"],
+        "mustContainOneOf": ["Alta", "Snowbird", "Park City", "Deer Valley", "Brighton", "Solitude", "Sundance"],
+        "mustNotContain": [],
+        "maxWords": 320,
+        "minWords": 80
+      },
+      "rubricNotes": "Single-day trip planning. Answer should pick ONE resort decisively, not list five. Must combine current conditions with terrain quality.",
+      "tags": ["recommendation", "trip_planning", "decisive"]
+    },
+    {
+      "id": "E017",
+      "useCase": "U4",
+      "question": "Any recent news about Park City?",
+      "context": { "resortId": "419002", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "news_lookup",
+        "sourcesUsed": ["news"],
+        "mustContainOneOf": ["Park City"],
+        "mustNotContain": ["I don't have any news"],
+        "maxWords": 300,
+        "minWords": 50
+      },
+      "rubricNotes": "News summary. Should reference 1-3 recent articles by title or topic; if no recent articles, say so gracefully.",
+      "tags": ["news", "single_resort"]
+    },
+    {
+      "id": "E018",
+      "useCase": "U4",
+      "question": "What's happening in the ski industry this week?",
+      "context": { "resortId": null, "region": null, "pageSource": "home" },
+      "expected": {
+        "intent": "news_lookup",
+        "sourcesUsed": ["news"],
+        "mustContainOneOf": ["resort", "lift", "season", "snow"],
+        "mustNotContain": [],
+        "maxWords": 350,
+        "minWords": 100
+      },
+      "rubricNotes": "Broad news roundup. Should cite 3-5 articles spanning multiple resorts/topics.",
+      "tags": ["news", "broad", "roundup"]
+    },
+    {
+      "id": "E019",
+      "useCase": "U4",
+      "question": "Has there been any news about lift maintenance at Mammoth?",
+      "context": { "resortId": "619002", "region": null, "pageSource": "resort" },
+      "expected": {
+        "intent": "news_lookup",
+        "sourcesUsed": ["news"],
+        "mustContainOneOf": ["Mammoth", "lift", "maintenance", "tram", "no recent"],
+        "mustNotContain": [],
+        "maxWords": 250,
+        "minWords": 30
+      },
+      "rubricNotes": "Specific news topic. Tests retrieval precision (must filter by both resort AND topic). If no matching articles, graceful no-data response is acceptable.",
+      "tags": ["news", "single_resort", "specific_topic", "empty_result_ok"]
+    },
+    {
+      "id": "E020",
+      "useCase": "U4",
+      "question": "What's the latest from SnoCountry on Colorado?",
+      "context": { "resortId": null, "region": "colorado", "pageSource": null },
+      "expected": {
+        "intent": "news_lookup",
+        "sourcesUsed": ["news"],
+        "mustContainOneOf": ["Colorado"],
+        "mustNotContain": [],
+        "maxWords": 320,
+        "minWords": 80
+      },
+      "rubricNotes": "Region-scoped news. Should reference 2-4 recent Colorado articles. Do NOT mention non-Colorado articles.",
+      "tags": ["news", "region", "scoped"]
+    }
+  ]
+}

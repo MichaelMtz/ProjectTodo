@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POC Documents — SnoCountry AI Chat</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --panel: #ffffff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --accent: #0369a1;
+    --accent-deep: #075985;
+    --border: #e2e6ec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  header.page {
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    color: #fff;
+    padding: 36px 24px;
+  }
+  header.page .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+  header.page h1 {
+    margin: 0 0 8px 0;
+    font-size: 1.7rem;
+    letter-spacing: -0.01em;
+  }
+  header.page p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.95rem;
+    max-width: 70ch;
+  }
+  header.page .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    font-size: 0.85rem;
+    margin-bottom: 14px;
+    transition: color 0.15s ease;
+  }
+  header.page .back-link:hover { color: #fff; }
+  main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  /* ── Sequence bar ── */
+  .seq-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .seq-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #475569;
+    background: #f1f5f9;
+    border: 1px solid var(--border);
+    text-decoration: none;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.05s ease;
+  }
+  .seq-step:hover { border-color: #93c5fd; background: #eff6ff; }
+  .seq-step:active { transform: translateY(1px); }
+  .seq-dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .seq-arrow {
+    font-size: 1rem; color: #cbd5e1; padding: 0 4px; font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ── Doc cards ── */
+  section.group {
+    margin-bottom: 36px;
+  }
+  section.group h2 {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .doc-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  @media (min-width: 720px) {
+    .doc-grid { grid-template-columns: 1fr 1fr; }
+    .doc-grid .doc-card.wide { grid-column: 1 / -1; }
+  }
+  .doc-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px 20px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    border-left: 4px solid var(--border);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+  }
+  .doc-card:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  }
+  .doc-card:active { transform: translateY(1px); }
+  .doc-card .label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .doc-card h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--ink);
+  }
+  .doc-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .doc-card .footer-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .doc-card .footer-row .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #eef2f7;
+    border-radius: 999px;
+    color: #475569;
+  }
+
+  /* ── Source files ── */
+  .file-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  @media (min-width: 720px) {
+    .file-list { grid-template-columns: 1fr 1fr; }
+  }
+  .file-list li { margin: 0; }
+  .file-list a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    font-size: 0.9rem;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .file-list a:hover {
+    border-color: #93c5fd;
+    background: #fafcff;
+  }
+  .file-list .ext {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #eef2f7;
+    color: #475569;
+    flex-shrink: 0;
+  }
+  .file-list .ext.py { background: #dbeafe; color: #1d4ed8; }
+  .file-list .ext.json { background: #fef3c7; color: #92400e; }
+  .file-list .ext.txt { background: #f1f5f9; color: #64748b; }
+  .file-list .name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 50px 0 10px;
+  }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="wrap">
+    <a class="back-link" href="index.html">&larr; Back to main index</a>
+    <h1>POC Documents — SnoCountry AI Chat</h1>
+    <p>Five working documents covering the proof-of-concept phase: server infrastructure, model selection, evaluation questions, scoring philosophy, and the Python eval script reference. Read in order A &rarr; D or jump to any section.</p>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── Reading order ── -->
+  <div class="seq-bar">
+    <a class="seq-step" href="#poc-a"><span class="seq-dot" style="background:#c2410c;">A</span> AWS Server</a>
+    <span class="seq-arrow">&rarr;</span>
+    <a class="seq-step" href="#poc-b"><span class="seq-dot" style="background:#7c3aed;">B</span> Together.ai</a>
+    <span class="seq-arrow">&rarr;</span>
+    <a class="seq-step" href="#poc-c"><span class="seq-dot" style="background:#0d9488;">C</span> Eval Questions</a>
+    <span class="seq-arrow">&rarr;</span>
+    <a class="seq-step" href="#poc-d1"><span class="seq-dot" style="background:#2563eb;">D</span> Script Philosophy</a>
+    <span class="seq-arrow">&rarr;</span>
+    <a class="seq-step" href="#poc-d2"><span class="seq-dot" style="background:#d97706;">D</span> Script Reference</a>
+  </div>
+
+  <!-- ── POC Documents ── -->
+  <section class="group">
+    <h2>POC documents</h2>
+    <div class="doc-grid">
+
+      <a class="doc-card" href="POC-A-AWS-RAG-Server-Recommendation.html" id="poc-a" style="border-left-color:#c2410c;">
+        <span class="label" style="color:#c2410c;">POC-A &middot; Infrastructure &middot; 9 sections</span>
+        <h3>AWS RAG Server &mdash; Infrastructure Recommendation</h3>
+        <p>EC2 t3.small recommendation for the I/O-bound RAG orchestrator. Compares EC2 vs Lightsail vs serverless, covers hardware specs, Convex vs pgvector, architecture diagram, cost breakdown (~$15&ndash;19/mo), scaling guide, and setup checklist.</p>
+        <div class="footer-row">
+          <span class="pill">EC2 t3.small</span>
+          <span class="pill">cost analysis</span>
+          <span class="pill">architecture</span>
+        </div>
+      </a>
+
+      <a class="doc-card" href="POC-B-Together-AI-Recommendation.html" id="poc-b" style="border-left-color:#7c3aed;">
+        <span class="label" style="color:#7c3aed;">POC-B &middot; Model strategy &middot; 8 sections</span>
+        <h3>Together.ai &mdash; Model Strategy &amp; Fine-Tuning</h3>
+        <p>Three models to test: Llama 3.1 8B (fine-tune target, $0.14/M), Qwen 3.5 9B (contender, $0.17/M), Llama 3.3 70B (benchmark, $1.04/M). Account setup, models to skip, eval structure, fine-tuning path with LoRA (~$2&ndash;6), and cost projections.</p>
+        <div class="footer-row">
+          <span class="pill">3 models</span>
+          <span class="pill">fine-tuning</span>
+          <span class="pill">cost projections</span>
+        </div>
+      </a>
+
+      <a class="doc-card" href="POC-C-Model-Evaluation-Question-Set.html" id="poc-c" style="border-left-color:#0d9488;">
+        <span class="label" style="color:#0d9488;">POC-C &middot; Evaluation &middot; 11 sections</span>
+        <h3>Model Evaluation &mdash; Question Set &amp; Testing Philosophy</h3>
+        <p>18 eval questions across 7 weighted categories (live conditions, comparison, trip planning, edge cases, conversation, out-of-scope, prompt injection). Covers why evals fail, six design principles, scoring rubric, and the decision matrix.</p>
+        <div class="footer-row">
+          <span class="pill">18 questions</span>
+          <span class="pill">7 categories</span>
+          <span class="pill">scoring rubric</span>
+        </div>
+      </a>
+
+      <a class="doc-card" href="POC-D-Eval-Question-Script.html" id="poc-d1" style="border-left-color:#2563eb;">
+        <span class="label" style="color:#2563eb;">POC-D &middot; Script design &middot; 8 sections</span>
+        <h3>Eval Script &mdash; Design Philosophy</h3>
+        <p>The reasoning behind the Python eval script: isolating the model variable with context fixtures, three-layer architecture (fixtures / runner / scoring), mechanical faithfulness checking, signal detection, and the do-vs-don&rsquo;t grid.</p>
+        <div class="footer-row">
+          <span class="pill">fixture design</span>
+          <span class="pill">faithfulness</span>
+          <span class="pill">three layers</span>
+        </div>
+      </a>
+
+      <a class="doc-card wide" href="POC-D-Python-Eval-Script.html" id="poc-d2" style="border-left-color:#d97706;">
+        <span class="label" style="color:#d97706;">POC-D &middot; File reference &middot; 11 sections</span>
+        <h3>Python Eval Script &mdash; File Reference &amp; Usage Guide</h3>
+        <p>Complete reference for the <code>eval/</code> directory: file tree, role table, pipeline diagram, and detailed breakdowns of run_eval.py, config.py, runner.py, scorer.py, report.py, fixtures, and output files. Copy-paste CLI recipes included. Zero external dependencies, ~$0.50 per full run.</p>
+        <div class="footer-row">
+          <span class="pill">6 source files</span>
+          <span class="pill">CLI reference</span>
+          <span class="pill">download links</span>
+          <span class="pill">zero deps</span>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- ── Eval source files ── -->
+  <section class="group">
+    <h2>Eval script source files</h2>
+    <ul class="file-list">
+      <li><a href="eval/run_eval.py"><span class="ext py">py</span><span class="name">eval/run_eval.py &mdash; main entry point &amp; orchestrator</span></a></li>
+      <li><a href="eval/config.py"><span class="ext py">py</span><span class="name">eval/config.py &mdash; models, API keys, parameters</span></a></li>
+      <li><a href="eval/runner.py"><span class="ext py">py</span><span class="name">eval/runner.py &mdash; API caller &amp; prompt assembler</span></a></li>
+      <li><a href="eval/scorer.py"><span class="ext py">py</span><span class="name">eval/scorer.py &mdash; faithfulness &amp; signal checks</span></a></li>
+      <li><a href="eval/report.py"><span class="ext py">py</span><span class="name">eval/report.py &mdash; HTML comparison generator</span></a></li>
+      <li><a href="eval/fixtures/questions.json"><span class="ext json">json</span><span class="name">eval/fixtures/questions.json &mdash; 18 questions + RAG context</span></a></li>
+      <li><a href="eval/fixtures/system_prompt.txt"><span class="ext txt">txt</span><span class="name">eval/fixtures/system_prompt.txt &mdash; hardened system prompt</span></a></li>
+    </ul>
+  </section>
+
+  <!-- ── Pre-existing eval sets ── -->
+  <section class="group">
+    <h2>Pre-existing evaluation sets</h2>
+    <ul class="file-list">
+      <li><a href="eval/README.md"><span class="ext" style="background:#ecfeff;color:#0e7490;">md</span><span class="name">eval/README.md &mdash; schema, rubric, harness docs</span></a></li>
+      <li><a href="eval/poc-eval.json"><span class="ext json">json</span><span class="name">eval/poc-eval.json &mdash; 20-question POC eval set</span></a></li>
+      <li><a href="eval/full-eval.json"><span class="ext json">json</span><span class="name">eval/full-eval.json &mdash; 30+ question comprehensive set</span></a></li>
+    </ul>
+  </section>
+
+  <div class="footer">
+    POC Documents &bull; SnoCountry AI Chat Concept &bull; June 2026
+  </div>
+
+</main>
+
+</body>
+</html>

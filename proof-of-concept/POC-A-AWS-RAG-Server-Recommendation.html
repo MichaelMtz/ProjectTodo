@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS RAG Server — Infrastructure Recommendation</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --panel: #ffffff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --accent: #c2410c;
+    --user-bg: #eef6ff;
+    --user-border: #93c5fd;
+    --assistant-bg: #ffffff;
+    --assistant-border: #e5e7eb;
+    --code-bg: #0f172a;
+    --code-ink: #e2e8f0;
+    --inline-code-bg: #eef2f7;
+    --inline-code-ink: #b91c1c;
+    --table-border: #e5e7eb;
+    --table-head: #f1f5f9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  header.page {
+    background: linear-gradient(135deg, #c2410c 0%, #9a3412 100%);
+    color: #fff;
+    padding: 28px 24px;
+  }
+  header.page h1 {
+    margin: 0 0 6px 0;
+    font-size: 1.6rem;
+    letter-spacing: -0.01em;
+    color: white;
+  }
+  header.page .meta {
+    opacity: 0.85;
+    font-size: 0.9rem;
+  }
+  main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+  }
+  main > section { margin: 0 0 12px 0; }
+  main > section:first-child > h2:first-child { margin-top: 0; }
+  h2 {
+    font-size: 1.25rem;
+    margin: 28px 0 10px;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 6px;
+  }
+  h3 {
+    font-size: 1.05rem;
+    margin: 20px 0 8px;
+  }
+  h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 14px 0 6px;
+    color: #334155;
+  }
+  p { margin: 10px 0; }
+  ul, ol { padding-left: 22px; margin: 10px 0; }
+  li { margin: 4px 0; }
+  hr {
+    border: none;
+    border-top: 1px dashed #cbd5e1;
+    margin: 22px 0;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 0.92rem;
+    background: #fff;
+  }
+  th, td {
+    border: 1px solid var(--table-border);
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--table-head);
+    font-weight: 600;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--inline-code-bg);
+    color: var(--inline-code-ink);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 14px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    margin: 12px 0;
+  }
+  pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+  }
+  blockquote {
+    border-left: 4px solid #cbd5e1;
+    margin: 12px 0;
+    padding: 4px 14px;
+    color: #475569;
+    background: #f8fafc;
+  }
+
+  /* Verdict badge */
+  .verdict {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+  }
+  .verdict-yes {
+    background: #dcfce7;
+    color: #15803d;
+  }
+  .verdict-no {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+  .verdict-maybe {
+    background: #fef9c3;
+    color: #a16207;
+  }
+  .verdict-rec {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  /* Callout box */
+  .callout {
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+  .callout-insight {
+    background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+  }
+  .callout-rec {
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+    border: 1px solid #bbf7d0;
+    color: #166534;
+  }
+  .callout-warn {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border: 1px solid #fde68a;
+    color: #92400e;
+  }
+  .callout strong { color: inherit; }
+
+  /* Architecture diagram (ASCII-style) */
+  .arch-box {
+    background: #0f172a;
+    color: #94a3b8;
+    border-radius: 12px;
+    padding: 18px 20px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+  .arch-box .highlight { color: #38bdf8; }
+  .arch-box .highlight-green { color: #4ade80; }
+  .arch-box .highlight-orange { color: #fb923c; }
+  .arch-box .dim { color: #475569; }
+
+  /* ---------- Layout with sidebar ---------- */
+  .layout {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 28px;
+    padding: 0 20px;
+  }
+  .layout > main {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 920px;
+    margin: 0;
+    padding: 24px 0 80px;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    flex: 0 0 300px;
+    position: sticky;
+    top: 16px;
+    align-self: flex-start;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    padding: 20px 0;
+  }
+  .sidebar-inner {
+    background: #f1f3f6;
+    border: 1px solid #e2e6ec;
+    border-radius: 12px;
+    padding: 14px 12px;
+  }
+  .sidebar-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #6b7280;
+    padding: 4px 8px 10px;
+  }
+  .prompt-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .prompt-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #ffffff;
+    border: 1px solid #e2e6ec;
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.05s ease;
+  }
+  .prompt-card:hover {
+    border-color: #fdba74;
+    background: #fffbf5;
+  }
+  .prompt-card:active { transform: translateY(1px); }
+  .prompt-card .card-num {
+    flex: 0 0 28px;
+    height: 28px;
+    width: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: #eef2f7;
+    color: #94a3b8;
+    border: 1px solid #e2e6ec;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .prompt-card .card-body { min-width: 0; flex: 1 1 auto; }
+  .prompt-card .card-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .prompt-card .card-sub {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .prompt-card.active {
+    border-color: #c2410c;
+    background: #fff7ed;
+    box-shadow: 0 0 0 1px #c2410c inset;
+  }
+  .prompt-card.active .card-num {
+    background: #c2410c;
+    color: #ffffff;
+    border-color: #c2410c;
+  }
+  .prompt-card.active .card-title { color: #7c2d12; }
+
+  main > section[id^="section-"],
+  main h2, main h3, main h4 {
+    scroll-margin-top: 16px;
+  }
+
+  /* ---------- Bookmark toggle on headings ---------- */
+  main h2, main h3, main h4 {
+    position: relative;
+    padding-right: 36px;
+  }
+  .bookmark-toggle {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0;
+    opacity: 1;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+  .bookmark-toggle:hover { color: #c2410c; background: #fff7ed; }
+  .bookmark-toggle:focus { outline: 2px solid #fdba74; outline-offset: 1px; }
+  .bookmark-toggle.is-bookmarked { color: #c2410c; }
+  .bookmark-toggle svg { display: block; }
+
+  /* ---------- Sidebar bookmarks section ---------- */
+  .bookmark-section {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e6ec;
+  }
+  .bookmark-empty {
+    font-size: 0.78rem;
+    color: #6b7280;
+    padding: 4px 8px 6px;
+    line-height: 1.4;
+  }
+  .bookmark-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bookmark-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #ffffff;
+    border: 1px solid #e2e6ec;
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 0.83rem;
+    line-height: 1.3;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+  .bookmark-card:hover { border-color: #fdba74; background: #fffbf5; }
+  .bookmark-card.active {
+    border-color: #c2410c;
+    background: #fff7ed;
+    box-shadow: 0 0 0 1px #c2410c inset;
+  }
+  .bookmark-card .bm-icon {
+    flex: 0 0 16px;
+    color: #c2410c;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .bookmark-card .bm-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #1f2937;
+  }
+  .bookmark-card .bm-remove {
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .bookmark-card:hover .bm-remove,
+  .bookmark-card .bm-remove:focus { opacity: 1; }
+  .bookmark-card .bm-remove:hover { color: #b91c1c; background: #fee2e2; }
+
+  /* ---------- Reading progress bar ---------- */
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, #c2410c 0%, #fb923c 100%);
+    z-index: 200;
+    transition: width 0.08s linear;
+    pointer-events: none;
+  }
+
+  /* ---------- Hamburger (mobile only) ---------- */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 120;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid #e2e6ec;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.15);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .menu-toggle:hover { background: #fffbf5; border-color: #fdba74; }
+  .menu-toggle .bars {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .menu-toggle .bars span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: #1f2937;
+    border-radius: 1px;
+  }
+
+  .drawer-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 110;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .drawer-backdrop.is-open { display: block; opacity: 1; }
+
+  .sidebar-close {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #e2e6ec;
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 1;
+  }
+  .sidebar-close:hover { background: #f1f5f9; color: #1f2937; }
+
+  body.no-scroll { overflow: hidden; }
+
+  @media (max-width: 1024px) {
+    .layout { padding: 0; }
+    .layout > main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+    .menu-toggle { display: flex; }
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 320px;
+      max-width: 85vw;
+      max-height: none;
+      z-index: 115;
+      background: #f1f3f6;
+      overflow-y: auto;
+      padding: 16px 12px;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      box-shadow: 2px 0 16px rgba(0,0,0,0.12);
+    }
+    .sidebar.is-open { transform: translateX(0); }
+    .sidebar-inner { background: transparent; border: none; padding: 36px 6px 6px; }
+    .sidebar-close { display: flex; }
+  }
+
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 40px 0 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar" aria-hidden="true"></div>
+
+<button class="menu-toggle" id="menuToggle" type="button" aria-label="Open section menu" aria-controls="sidebar" aria-expanded="false">
+  <span class="bars"><span></span><span></span><span></span></span>
+</button>
+
+<div class="drawer-backdrop" id="drawerBackdrop" aria-hidden="true"></div>
+
+<header class="page">
+  <h1>AWS RAG Server — Infrastructure Recommendation</h1>
+  <div class="meta">SnoCountry AI Chat &bull; EC2 vs Lightsail vs serverless &bull; bare-minimum hardware &bull; cost analysis</div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar" id="sidebar" aria-label="Section navigation">
+    <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Close section menu">&times;</button>
+    <div class="sidebar-inner">
+      <div class="sidebar-title">Sections</div>
+      <nav class="prompt-list" id="promptList">
+        <a class="prompt-card" href="#section-1" data-target="section-1">
+          <div class="card-num">1</div>
+          <div class="card-body">
+            <div class="card-title">Key insight</div>
+            <div class="card-sub">The server is an orchestrator, not a GPU workload</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-2" data-target="section-2">
+          <div class="card-num">2</div>
+          <div class="card-body">
+            <div class="card-title">Recommendation</div>
+            <div class="card-sub">EC2 t3.small &mdash; why, and why not Lightsail</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-3" data-target="section-3">
+          <div class="card-num">3</div>
+          <div class="card-body">
+            <div class="card-title">Options comparison</div>
+            <div class="card-sub">EC2, Lightsail, Lambda, Fargate, App Runner</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-4" data-target="section-4">
+          <div class="card-num">4</div>
+          <div class="card-body">
+            <div class="card-title">Bare-minimum hardware</div>
+            <div class="card-sub">CPU, RAM, disk, network specs</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-5" data-target="section-5">
+          <div class="card-num">5</div>
+          <div class="card-body">
+            <div class="card-title">Convex vs pgvector</div>
+            <div class="card-sub">Where to run the vector index</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-6" data-target="section-6">
+          <div class="card-num">6</div>
+          <div class="card-body">
+            <div class="card-title">Architecture diagram</div>
+            <div class="card-sub">EC2 + Together.ai + Convex topology</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-7" data-target="section-7">
+          <div class="card-num">7</div>
+          <div class="card-body">
+            <div class="card-title">Cost breakdown</div>
+            <div class="card-sub">Monthly totals at launch traffic</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-8" data-target="section-8">
+          <div class="card-num">8</div>
+          <div class="card-body">
+            <div class="card-title">When to scale up</div>
+            <div class="card-sub">Traffic thresholds and next steps</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-9" data-target="section-9">
+          <div class="card-num">9</div>
+          <div class="card-body">
+            <div class="card-title">Setup checklist</div>
+            <div class="card-sub">Step-by-step EC2 provisioning</div>
+          </div>
+        </a>
+      </nav>
+
+      <section class="bookmark-section" aria-label="Bookmarks">
+        <div class="sidebar-title">Bookmarks</div>
+        <div class="bookmark-empty" id="bookmarkEmpty">
+          Click the bookmark icon next to any heading to save it here.
+        </div>
+        <nav class="bookmark-list" id="bookmarkList"></nav>
+      </section>
+    </div>
+  </aside>
+
+<main>
+
+<p>Infrastructure recommendation for hosting the SnoCountry RAG server on an existing AWS account. This document evaluates EC2, Lightsail, Lambda, Fargate, and App Runner against the actual compute profile of the <code>/api/rag/chat</code> orchestrator defined in <code>rag-plan.md</code>.</p>
+
+<hr>
+
+<section id="section-1">
+<h2>1. Key insight &mdash; the server is an orchestrator</h2>
+
+<div class="callout callout-insight">
+  <strong>The RAG server is I/O-bound, not compute-bound.</strong> The heavy lifting &mdash; LLM inference, embeddings, and vector search &mdash; all lives off-box on Together.ai and Convex. The AWS server is a Node.js or Python process making HTTP calls and streaming SSE back. It needs almost no CPU or RAM.
+</div>
+
+<p>Here is exactly what the <code>/api/rag/chat</code> action does on the server, step by step:</p>
+
+<table>
+<thead>
+<tr><th>Step</th><th>What happens</th><th>Resource</th><th>Time</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>Validate + sanitize input</td><td>CPU (trivial)</td><td>~0 ms</td></tr>
+<tr><td>2</td><td>Call Together.ai 8B for topic classification</td><td>Outbound HTTP</td><td>~50 ms</td></tr>
+<tr><td>3</td><td>Regex-first intent classifier</td><td>CPU (trivial)</td><td>~0 ms</td></tr>
+<tr><td>4a</td><td>Fetch live conditions from Convex</td><td>Outbound HTTP</td><td>~40 ms</td></tr>
+<tr><td>4b</td><td>Vector search against Convex vectorIndex</td><td>Outbound HTTP</td><td>~50 ms</td></tr>
+<tr><td>4c</td><td>Fetch news summaries</td><td>Outbound HTTP</td><td>~30 ms</td></tr>
+<tr><td>5</td><td>Assemble + trim prompt to 2,500 tokens</td><td>CPU (trivial)</td><td>~1 ms</td></tr>
+<tr><td>6</td><td>Stream from Together.ai 70B</td><td>Outbound HTTP</td><td>~1&ndash;4 s</td></tr>
+<tr><td>7</td><td>Validate output (regex + faithfulness)</td><td>CPU (trivial)</td><td>~1 ms</td></tr>
+<tr><td>8</td><td>Stream SSE tokens to user</td><td>Network out</td><td>(concurrent with 6)</td></tr>
+<tr><td>9</td><td>Fire-and-forget tracking insert</td><td>Async HTTP</td><td>~0 ms (non-blocking)</td></tr>
+</tbody>
+</table>
+
+<p><strong>CPU work on the server: &lt; 5 ms per request.</strong> The rest is waiting on network I/O. This means a very small instance handles a very large number of concurrent requests &mdash; each one is mostly idle while waiting for Together.ai to respond.</p>
+
+<hr>
+</section>
+
+<section id="section-2">
+<h2>2. Recommendation: EC2 <code>t3.small</code></h2>
+
+<div class="callout callout-rec">
+  <strong>Go with EC2 <code>t3.small</code></strong> &mdash; 2 vCPU, 2 GB RAM, ~$15/mo reserved or ~$19/mo on-demand. It matches the workload, integrates with your existing AWS networking/IAM, and gives you a clear upgrade path. Lightsail is tempting but too limiting once you need VPC integration, CloudWatch, or security groups.
+</div>
+
+<h3>Why EC2 over Lightsail</h3>
+
+<table>
+<thead>
+<tr><th>Factor</th><th>EC2</th><th>Lightsail</th></tr>
+</thead>
+<tbody>
+<tr><td>VPC integration</td><td><span class="verdict verdict-yes">Native</span></td><td><span class="verdict verdict-no">VPC peering required</span></td></tr>
+<tr><td>IAM roles</td><td><span class="verdict verdict-yes">Full support</span></td><td><span class="verdict verdict-no">Limited</span></td></tr>
+<tr><td>Security groups</td><td><span class="verdict verdict-yes">Granular</span></td><td><span class="verdict verdict-maybe">Simplified firewall</span></td></tr>
+<tr><td>CloudWatch</td><td><span class="verdict verdict-yes">Native</span></td><td><span class="verdict verdict-maybe">Basic only</span></td></tr>
+<tr><td>Upgrade path</td><td><span class="verdict verdict-yes">Resize in place</span></td><td><span class="verdict verdict-no">Migrate to EC2</span></td></tr>
+<tr><td>Existing account</td><td><span class="verdict verdict-yes">Already set up</span></td><td><span class="verdict verdict-yes">Same account</span></td></tr>
+<tr><td>Price (2 vCPU, 2 GB)</td><td>~$15&ndash;19/mo</td><td>~$10/mo</td></tr>
+<tr><td>Networking</td><td>Full AWS ecosystem</td><td>Isolated &mdash; needs peering for RDS, etc.</td></tr>
+</tbody>
+</table>
+
+<p>The $5&ndash;9/mo savings on Lightsail is not worth the networking limitations and the inevitable migration to EC2 when you need proper CloudWatch alarms, security groups, or an Application Load Balancer.</p>
+
+<hr>
+</section>
+
+<section id="section-3">
+<h2>3. All options compared</h2>
+
+<table>
+<thead>
+<tr><th>Option</th><th>Verdict</th><th>Rationale</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>EC2 <code>t3.small</code></strong></td>
+  <td><span class="verdict verdict-rec">Recommended</span></td>
+  <td>2 vCPU, 2 GB RAM. Burstable, perfect for I/O-bound orchestration. ~$15/mo reserved. Existing AWS account with networking in place.</td>
+</tr>
+<tr>
+  <td><strong>EC2 <code>t3.medium</code></strong></td>
+  <td><span class="verdict verdict-maybe">If pgvector local</span></td>
+  <td>2 vCPU, 4 GB RAM. ~$30/mo reserved. Pick this only if you co-locate PostgreSQL + pgvector on the same box instead of using Convex's vector index.</td>
+</tr>
+<tr>
+  <td><strong>Lightsail $10</strong></td>
+  <td><span class="verdict verdict-no">Too limiting</span></td>
+  <td>2 GB RAM, 1 vCPU. Simpler networking, but you lose VPC integration, IAM roles, CloudWatch, and the ability to scale without migrating. Good for isolated projects &mdash; this isn't one.</td>
+</tr>
+<tr>
+  <td><strong>Lambda + API&nbsp;Gateway</strong></td>
+  <td><span class="verdict verdict-no">No for v1</span></td>
+  <td>SSE streaming is awkward on Lambda (30s default timeout, response-streaming adds complexity). The long-lived Together.ai inference call (~1&ndash;4s) doesn't fit the Lambda execution model well. Revisit post-launch if you want scale-to-zero.</td>
+</tr>
+<tr>
+  <td><strong>Fargate / ECS</strong></td>
+  <td><span class="verdict verdict-no">Overkill for v1</span></td>
+  <td>Adds container orchestration complexity for a single-process server. Makes sense at scale (multiple containers, auto-scaling), but for POC &rarr; soft launch you'd be over-engineering.</td>
+</tr>
+<tr>
+  <td><strong>App Runner</strong></td>
+  <td><span class="verdict verdict-maybe">Decent alternative</span></td>
+  <td>Simpler than ECS, auto-scales, ~$7/mo minimum. But less control than EC2, and you're already familiar with EC2 on this account.</td>
+</tr>
+</tbody>
+</table>
+
+<hr>
+</section>
+
+<section id="section-4">
+<h2>4. Bare-minimum hardware spec</h2>
+
+<table>
+<thead>
+<tr><th>Resource</th><th>Minimum</th><th>Why</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>CPU</strong></td><td>2 vCPU (burstable)</td><td>Regex classifiers, JSON assembly, SSE streaming. Bursts handle concurrent requests.</td></tr>
+<tr><td><strong>RAM</strong></td><td>2 GB</td><td>Node.js/Python process + OS. No ML models running locally.</td></tr>
+<tr><td><strong>Disk</strong></td><td>20 GB gp3</td><td>OS + app code + logs. The corpus and models live off-box.</td></tr>
+<tr><td><strong>Network</strong></td><td>Standard VPC</td><td>Outbound HTTPS to Together.ai + Convex. Inbound HTTPS from Netlify/browsers.</td></tr>
+</tbody>
+</table>
+
+<p>That's a <strong><code>t3.small</code></strong> &mdash; roughly <strong>$15/mo reserved</strong> or <strong>$19/mo on-demand</strong>.</p>
+
+<div class="callout callout-insight">
+  <strong>Why so small?</strong> At your projected launch traffic (~800 chat users / 5,000 turns per month), you're looking at roughly <strong>0.1 requests per minute on average</strong>. Even the Saturday-storm peak from the stress test plan (200 concurrent users) is manageable on a <code>t3.medium</code> since each request is mostly waiting on Together.ai, not burning CPU.
+</div>
+
+<h3>If you co-locate pgvector</h3>
+
+<p>If you decide to run PostgreSQL + pgvector on the same instance instead of using Convex's vector index, bump to <code>t3.medium</code> (4 GB RAM). Your corpus is small (~5,000 chunks &times; 1024 dims = ~20 MB of vectors), so 4 GB is plenty for both the app process and PostgreSQL.</p>
+
+<hr>
+</section>
+
+<section id="section-5">
+<h2>5. Convex vector index vs. self-hosted pgvector</h2>
+
+<p>Your <code>rag-plan.md</code> currently puts the vector store on Convex (<code>good-cormorant-17</code>). If the orchestrator moves to EC2, you have a choice about where the vector search lives.</p>
+
+<table>
+<thead>
+<tr><th>Approach</th><th>Pros</th><th>Cons</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Keep Convex vector index</strong></td>
+  <td>Zero DB ops; already designed; built-in filtering; schema + scripts ready</td>
+  <td>Adds a network hop; Convex bandwidth costs at scale; orchestrator and data on different services</td>
+</tr>
+<tr>
+  <td><strong>pgvector on same EC2</strong></td>
+  <td>Single box; no external vector-search latency; full SQL power for queries</td>
+  <td>You run PostgreSQL (backups, upgrades); need <code>t3.medium</code> for RAM; re-implement the index</td>
+</tr>
+<tr>
+  <td><strong>RDS PostgreSQL + pgvector</strong></td>
+  <td>Managed DB; automatic backups; Multi-AZ option</td>
+  <td>~$15&ndash;30/mo for <code>db.t3.micro</code>; adds cost but removes DB ops burden</td>
+</tr>
+</tbody>
+</table>
+
+<div class="callout callout-rec">
+  <strong>Recommendation: keep Convex for the vector index</strong> and put just the orchestrator on EC2. It's the fastest path &mdash; your schema, indexing scripts, and search actions are already designed for Convex. Migrate to pgvector later <em>only if</em> Convex bandwidth becomes a real cost issue (which at 5k turns/mo it won't be).
+</div>
+
+<hr>
+</section>
+
+<section id="section-6">
+<h2>6. Architecture diagram</h2>
+
+<div class="arch-box"><pre style="margin:0;padding:0;background:transparent;color:inherit;">
+<span class="highlight">┌──────────────────────────────────────────────────┐</span>
+<span class="highlight">│  EC2  t3.small  (~$15&ndash;19/mo)                     │</span>
+<span class="highlight">│                                                  │</span>
+<span class="highlight">│  Node.js / Fastify  (or Python / FastAPI)        │</span>
+<span class="highlight">│  ├─ /api/rag/chat       (the orchestrator)       │</span>
+<span class="highlight">│  ├─ /api/rag/resort-context, recommend, etc.     │</span>
+<span class="highlight">│  └─ /api/track/rag-request                       │</span>
+<span class="highlight">│                                                  │</span>
+<span class="highlight">│  nginx  (reverse proxy + TLS via Let's Encrypt)  │</span>
+<span class="highlight">│  PM2 or systemd  (process manager)               │</span>
+<span class="highlight">├──────────────────────────────────────────────────┤</span>
+<span class="highlight">│  Outbound calls:                                 │</span>
+<span class="highlight-orange">│  → Together.ai  (8B classify + 70B inference)    │</span>
+<span class="highlight-green">│  → Convex       (vector search + live data)      │</span>
+<span class="highlight-green">│  → News API     (article summaries)              │</span>
+<span class="highlight">└──────────────────────────────────────────────────┘</span>
+          <span class="dim">▲</span>
+          <span class="dim">│  HTTPS / SSE</span>
+          <span class="dim">▼</span>
+<span class="dim">┌──────────────────────────────────────────────────┐</span>
+<span class="dim">│  SnoCountry.com  (Netlify CDN)                   │</span>
+<span class="dim">│  └─ Chat widget  (vanilla JS, ~150 lines)        │</span>
+<span class="dim">│     POST /api/rag/chat → stream SSE response     │</span>
+<span class="dim">└──────────────────────────────────────────────────┘</span>
+</pre></div>
+
+<p><strong>Data flow:</strong> Browser sends <code>POST /api/rag/chat</code> to the EC2 instance. The orchestrator calls Together.ai for classification and inference, Convex for vector search and live conditions, and the news API for article summaries. Tokens stream back to the browser via SSE. Tracking is fire-and-forget to Convex.</p>
+
+<hr>
+</section>
+
+<section id="section-7">
+<h2>7. Cost breakdown</h2>
+
+<h3>Monthly cost at launch traffic (~5k turns/mo)</h3>
+
+<table>
+<thead>
+<tr><th>Component</th><th>Monthly cost</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>EC2 <code>t3.small</code></strong> (reserved)</td><td>~$15</td><td>2 vCPU, 2 GB RAM, 20 GB gp3</td></tr>
+<tr><td><strong>Together.ai inference</strong></td><td>~$15</td><td>~$0.003/turn &times; 5k turns</td></tr>
+<tr><td><strong>Together.ai embeddings</strong></td><td>~$1</td><td>Corpus refresh</td></tr>
+<tr><td><strong>Convex usage</strong></td><td>$0</td><td>Free tier covers 5k turns/mo</td></tr>
+<tr><td><strong>Data transfer</strong></td><td>~$1</td><td>Negligible at this volume</td></tr>
+<tr><td><strong>Domain + TLS</strong></td><td>$0</td><td>Let's Encrypt + existing domain</td></tr>
+<tr><td colspan="3">&nbsp;</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>~$32&ndash;36/mo</strong></td><td></td></tr>
+</tbody>
+</table>
+
+<h3>Comparison with current Convex-only plan</h3>
+
+<table>
+<thead>
+<tr><th>Traffic tier</th><th>Convex-only (from rag-plan.md)</th><th>EC2 + Convex hybrid</th><th>Difference</th></tr>
+</thead>
+<tbody>
+<tr><td>5k turns/mo</td><td>~$20/mo</td><td>~$35/mo</td><td>+$15 (the EC2 box)</td></tr>
+<tr><td>50k turns/mo</td><td>~$230/mo</td><td>~$200/mo</td><td>&minus;$30 (Convex savings)</td></tr>
+<tr><td>250k turns/mo</td><td>~$920/mo</td><td>~$800/mo</td><td>&minus;$120 (Convex savings)</td></tr>
+</tbody>
+</table>
+
+<p>At low traffic, the EC2 box adds a fixed cost. At higher traffic, moving orchestration off Convex reduces per-action bandwidth costs. The crossover is around 20&ndash;30k turns/mo.</p>
+
+<div class="callout callout-warn">
+  <strong>Per-request cost stays ~$0.003</strong> regardless of where the orchestrator runs &mdash; Together.ai inference dominates. The infrastructure choice affects fixed costs, not per-turn costs. Fine-tuning to an 8B model (v2 path) drops per-turn cost ~70%.
+</div>
+
+<hr>
+</section>
+
+<section id="section-8">
+<h2>8. When to scale up</h2>
+
+<table>
+<thead>
+<tr><th>Traffic</th><th>Instance</th><th>Action</th></tr>
+</thead>
+<tbody>
+<tr><td>&lt; 30 req/min</td><td><code>t3.small</code></td><td>No change needed. Handles launch traffic + 10&times; headroom.</td></tr>
+<tr><td>30&ndash;100 req/min</td><td><code>t3.medium</code> or <code>t3.large</code></td><td>Resize in place. Consider adding a second instance behind an ALB.</td></tr>
+<tr><td>&gt; 100 req/min sustained</td><td>ECS/Fargate</td><td>Containerize and auto-scale. Or evaluate the dedicated-GPU path from the deployment plan.</td></tr>
+</tbody>
+</table>
+
+<h3>Traffic context</h3>
+
+<p>At projected launch traffic (~800 chat users, 5k turns/mo):</p>
+<ul>
+  <li><strong>Average:</strong> ~0.1 req/min &mdash; the server is idle most of the time</li>
+  <li><strong>Saturday storm peak</strong> (stress test scenario 2): 200 concurrent users for 90 seconds &mdash; manageable on <code>t3.medium</code> since each request is mostly waiting on Together.ai</li>
+  <li><strong>Sustained growth target</strong> (250k turns/mo): ~6 req/min average, ~60 req/min peak &mdash; still within <code>t3.medium</code> territory</li>
+</ul>
+
+<p>The <code>t3</code> burstable instances are ideal for this usage pattern: mostly idle with occasional bursts of concurrent requests. You earn CPU credits during idle periods and spend them during peaks.</p>
+
+<hr>
+</section>
+
+<section id="section-9">
+<h2>9. Setup checklist</h2>
+
+<h3>9.1 EC2 instance</h3>
+
+<ul>
+  <li>Launch <code>t3.small</code> in your existing VPC</li>
+  <li>Amazon Linux 2023 or Ubuntu 24.04 LTS</li>
+  <li>20 GB gp3 root volume</li>
+  <li>Security group: inbound 443 (HTTPS) + 22 (SSH from your IP only)</li>
+  <li>IAM role with CloudWatch Logs permissions</li>
+  <li>Elastic IP (static address for DNS)</li>
+</ul>
+
+<h3>9.2 Software stack</h3>
+
+<ul>
+  <li><strong>nginx</strong> &mdash; reverse proxy, TLS termination (Let's Encrypt via certbot)</li>
+  <li><strong>Node.js 20 LTS</strong> &mdash; runtime for the orchestrator</li>
+  <li><strong>PM2</strong> &mdash; process manager with auto-restart and log rotation</li>
+  <li><strong>certbot</strong> &mdash; auto-renewing TLS certificates</li>
+</ul>
+
+<h3>9.3 Environment variables</h3>
+
+<pre><code>TOGETHER_API_KEY=tok_...
+CONVEX_URL=https://good-cormorant-17.convex.site
+NEWS_API_URL=https://www.snow-country.com/resorts/api-easy-blog-list.php
+NODE_ENV=production
+PORT=3000
+RATE_LIMIT_PER_IP=30
+RATE_LIMIT_WINDOW_MIN=5
+</code></pre>
+
+<h3>9.4 DNS</h3>
+
+<ul>
+  <li>Point <code>api-chat.snocountry.com</code> (or similar) A record to the Elastic IP</li>
+  <li>Or use the existing domain with a <code>/api/rag/</code> path proxied from Netlify to the EC2 instance</li>
+</ul>
+
+<h3>9.5 Monitoring</h3>
+
+<ul>
+  <li><strong>CloudWatch agent</strong> &mdash; CPU, memory, disk metrics</li>
+  <li><strong>CloudWatch alarms</strong> &mdash; CPU &gt; 80% sustained, disk &gt; 85%, status check failed</li>
+  <li><strong>PM2 logs</strong> &rarr; CloudWatch Logs for centralized log search</li>
+  <li><strong>Application-level</strong> &mdash; the <code>rag_requests</code> table on Convex handles per-request metrics (tokens, cost, latency, errors)</li>
+</ul>
+
+<h3>9.6 Backups &amp; disaster recovery</h3>
+
+<ul>
+  <li>The EC2 instance is <strong>stateless</strong> &mdash; all state lives in Convex (vector index, tracking) and Together.ai (model weights). A replacement instance can be provisioned in minutes.</li>
+  <li>Keep the deployment script in your repo for reproducibility</li>
+  <li>Weekly AMI snapshot for faster recovery (optional but cheap)</li>
+</ul>
+
+<h3>9.7 Security hardening</h3>
+
+<ul>
+  <li>No inbound ports except 443 + 22 (SSH restricted to your IP)</li>
+  <li><code>TOGETHER_API_KEY</code> in AWS Systems Manager Parameter Store (encrypted), not in env files on disk</li>
+  <li>Auto-update OS security patches (Amazon Linux: <code>dnf-automatic</code>)</li>
+  <li>fail2ban for SSH brute-force protection</li>
+</ul>
+
+<hr>
+
+<div class="callout callout-rec">
+  <strong>Bottom line:</strong> An EC2 <code>t3.small</code> at ~$15&ndash;19/mo is the right starting point. The RAG server is an orchestrator &mdash; the expensive compute (LLM inference) stays on Together.ai. Start small, monitor real traffic, and resize in place when the data tells you to.
+</div>
+
+</section>
+
+<div class="footer">
+  AWS RAG Server Recommendation &bull; SnoCountry AI Chat Concept &bull; June 2026
+</div>
+
+</main>
+</div>
+
+<script>
+  (function () {
+    const cards = Array.from(document.querySelectorAll('.prompt-card'));
+    const targets = cards
+      .map(c => document.getElementById(c.dataset.target))
+      .filter(Boolean);
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('drawerBackdrop');
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebarClose = document.getElementById('sidebarClose');
+    const progressBar = document.getElementById('progressBar');
+    const bookmarkList = document.getElementById('bookmarkList');
+    const bookmarkEmpty = document.getElementById('bookmarkEmpty');
+
+    const STORAGE_KEY = 'aws-rag-rec:bookmarks:v1';
+    const isMobile = () => window.matchMedia('(max-width: 1024px)').matches;
+
+    // ---------- Drawer ----------
+    function openDrawer() {
+      sidebar.classList.add('is-open');
+      backdrop.classList.add('is-open');
+      document.body.classList.add('no-scroll');
+      if (menuToggle) menuToggle.setAttribute('aria-expanded', 'true');
+    }
+    function closeDrawer() {
+      sidebar.classList.remove('is-open');
+      backdrop.classList.remove('is-open');
+      document.body.classList.remove('no-scroll');
+      if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    if (menuToggle) menuToggle.addEventListener('click', openDrawer);
+    if (sidebarClose) sidebarClose.addEventListener('click', closeDrawer);
+    if (backdrop) backdrop.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && sidebar.classList.contains('is-open')) closeDrawer();
+    });
+
+    function smoothScrollTo(el) {
+      if (isMobile()) {
+        closeDrawer();
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 260);
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    // ---------- Section cards ----------
+    cards.forEach(card => {
+      card.addEventListener('click', e => {
+        e.preventDefault();
+        const el = document.getElementById(card.dataset.target);
+        if (!el) return;
+        smoothScrollTo(el);
+        history.replaceState(null, '', '#' + card.dataset.target);
+        setActiveSection(card.dataset.target);
+      });
+    });
+
+    function setActiveSection(id) {
+      cards.forEach(c => c.classList.toggle('active', c.dataset.target === id));
+    }
+
+    if ('IntersectionObserver' in window && targets.length) {
+      const observer = new IntersectionObserver(
+        entries => {
+          const visible = entries
+            .filter(e => e.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          if (visible.length) setActiveSection(visible[0].target.id);
+        },
+        { rootMargin: '-15% 0px -70% 0px', threshold: 0 }
+      );
+      targets.forEach(t => observer.observe(t));
+    }
+
+    if (location.hash) {
+      const hashId = location.hash.replace('#', '');
+      if (cards.some(c => c.dataset.target === hashId)) setActiveSection(hashId);
+    } else if (cards.length) {
+      setActiveSection(cards[0].dataset.target);
+    }
+
+    // ---------- Heading IDs + bookmark toggles ----------
+    function slugify(text) {
+      return (text || '')
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+    }
+
+    function bookmarkIconSVG(filled) {
+      return '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="' +
+        (filled ? 'currentColor' : 'none') +
+        '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+    }
+
+    const usedIds = new Set();
+    document.querySelectorAll('[id]').forEach(el => usedIds.add(el.id));
+
+    const headings = Array.from(document.querySelectorAll('main h2, main h3, main h4'));
+    headings.forEach(h => {
+      if (!h.id) {
+        let base = 'h-' + slugify(h.textContent || '');
+        if (base === 'h-') base = 'h-section';
+        let id = base;
+        let n = 2;
+        while (usedIds.has(id)) { id = base + '-' + n; n++; }
+        h.id = id;
+        usedIds.add(id);
+      }
+      addBookmarkToggle(h);
+    });
+
+    function addBookmarkToggle(h) {
+      if (h.querySelector('.bookmark-toggle')) return;
+      const labelText = (h.textContent || '').replace(/\s+/g, ' ').trim();
+      const btn = document.createElement('button');
+      btn.className = 'bookmark-toggle';
+      btn.type = 'button';
+      btn.setAttribute('aria-label', 'Toggle bookmark for ' + labelText);
+      btn.dataset.targetId = h.id;
+      btn.dataset.label = labelText;
+      btn.innerHTML = bookmarkIconSVG(false);
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleBookmark(h.id, labelText);
+      });
+      h.appendChild(btn);
+    }
+
+    // ---------- Bookmarks store ----------
+    function loadBookmarks() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) { return []; }
+    }
+    function saveBookmarks(arr) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+      catch (e) { /* silent */ }
+    }
+
+    let bookmarks = loadBookmarks();
+
+    function isBookmarked(id) {
+      return bookmarks.some(b => b.targetId === id);
+    }
+
+    function toggleBookmark(id, label) {
+      if (isBookmarked(id)) {
+        bookmarks = bookmarks.filter(b => b.targetId !== id);
+      } else {
+        bookmarks.push({ targetId: id, label: label, addedAt: new Date().toISOString() });
+      }
+      saveBookmarks(bookmarks);
+      renderBookmarks();
+    }
+
+    // ---------- Bookmark rendering ----------
+    let bookmarkObserver = null;
+
+    function renderBookmarks() {
+      document.querySelectorAll('.bookmark-toggle').forEach(btn => {
+        const isOn = isBookmarked(btn.dataset.targetId);
+        btn.classList.toggle('is-bookmarked', isOn);
+        btn.innerHTML = bookmarkIconSVG(isOn);
+      });
+
+      if (!bookmarkList) return;
+      bookmarkList.innerHTML = '';
+
+      if (bookmarks.length === 0) {
+        if (bookmarkEmpty) bookmarkEmpty.style.display = 'block';
+      } else {
+        if (bookmarkEmpty) bookmarkEmpty.style.display = 'none';
+        bookmarks.forEach(b => {
+          const card = document.createElement('a');
+          card.className = 'bookmark-card';
+          card.href = '#' + b.targetId;
+          card.dataset.target = b.targetId;
+          card.title = b.label;
+          card.innerHTML =
+            '<span class="bm-icon">' + bookmarkIconSVG(true) + '</span>' +
+            '<span class="bm-label"></span>' +
+            '<button class="bm-remove" type="button" aria-label="Remove bookmark">&times;</button>';
+          card.querySelector('.bm-label').textContent = b.label;
+          card.addEventListener('click', e => {
+            if (e.target.closest('.bm-remove')) {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleBookmark(b.targetId, b.label);
+              return;
+            }
+            e.preventDefault();
+            const el = document.getElementById(b.targetId);
+            if (!el) return;
+            smoothScrollTo(el);
+            history.replaceState(null, '', '#' + b.targetId);
+          });
+          bookmarkList.appendChild(card);
+        });
+      }
+      refreshBookmarkObserver();
+    }
+
+    function refreshBookmarkObserver() {
+      if (bookmarkObserver) { bookmarkObserver.disconnect(); bookmarkObserver = null; }
+      if (!('IntersectionObserver' in window) || bookmarks.length === 0) return;
+      bookmarkObserver = new IntersectionObserver(
+        entries => {
+          const visible = entries
+            .filter(e => e.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          if (visible.length) {
+            const id = visible[0].target.id;
+            document.querySelectorAll('.bookmark-card').forEach(c => {
+              c.classList.toggle('active', c.dataset.target === id);
+            });
+          }
+        },
+        { rootMargin: '-15% 0px -70% 0px', threshold: 0 }
+      );
+      bookmarks.forEach(b => {
+        const el = document.getElementById(b.targetId);
+        if (el) bookmarkObserver.observe(el);
+      });
+    }
+
+    renderBookmarks();
+
+    // ---------- Reading progress bar ----------
+    let ticking = false;
+    function updateProgress() {
+      const doc = document.documentElement;
+      const scrollTop = window.scrollY || doc.scrollTop;
+      const scrollHeight = doc.scrollHeight - doc.clientHeight;
+      const pct = scrollHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / scrollHeight) * 100)) : 0;
+      if (progressBar) progressBar.style.width = pct + '%';
+      ticking = false;
+    }
+    function onScroll() {
+      if (!ticking) { window.requestAnimationFrame(updateProgress); ticking = true; }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    updateProgress();
+  })();
+</script>
+
+</body>
+</html>

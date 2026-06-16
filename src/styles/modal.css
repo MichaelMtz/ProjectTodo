@@ -1,0 +1,283 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(40, 40, 38, 0.32);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 28px;
+}
+
+.modal {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  width: min(940px, 100%);
+  max-height: 88vh;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-drag);
+  overflow: hidden;
+}
+.modal-loading {
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+/* Left content */
+.modal-main {
+  padding: 18px 22px 24px;
+  overflow-y: auto;
+}
+.modal-main-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.modal-id {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.modal-title {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 580;
+  color: var(--text-primary);
+  padding: 4px 0 10px;
+}
+.modal-section-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 18px 0 8px;
+}
+.modal-description {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 11px 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  background: var(--bg-app);
+  outline: none;
+}
+.modal-description:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+  background: var(--bg-card);
+}
+
+/* Checklist */
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.checklist-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 6px;
+  border-radius: 6px;
+}
+.checklist-row:hover {
+  background: var(--bg-sunken);
+}
+.checklist-text {
+  flex: 1;
+  font-size: 13.5px;
+}
+.checklist-text.is-done {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.checklist-del {
+  opacity: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.checklist-row:hover .checklist-del {
+  opacity: 1;
+}
+.checklist-add {
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 7px 6px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+}
+
+/* Comments */
+.comment-add {
+  margin-bottom: 12px;
+}
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.comment {
+  display: flex;
+  gap: 9px;
+}
+.comment-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 650;
+  flex-shrink: 0;
+}
+.comment-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+.comment-head .muted {
+  font-size: 11.5px;
+}
+.comment-body {
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* Activity */
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+.activity-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  flex-shrink: 0;
+}
+.activity-row strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.activity-time {
+  margin-left: auto;
+  font-size: 11.5px;
+}
+
+/* Right properties */
+.modal-side {
+  background: var(--bg-sidebar);
+  border-left: 1px solid var(--border-subtle);
+  padding: 16px 18px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.modal-side-head {
+  margin-bottom: 12px;
+}
+.save-state {
+  font-size: 11.5px;
+  color: var(--col-done);
+  font-weight: 600;
+}
+.save-state.is-saving {
+  color: var(--text-muted);
+}
+.prop-row {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.prop-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.prop-select,
+.prop-input {
+  width: 100%;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0 7px;
+  font-size: 13px;
+  outline: none;
+  color: var(--text-primary);
+}
+.prop-select:hover,
+.prop-input:hover {
+  background: var(--bg-sunken);
+}
+.prop-select:focus,
+.prop-input:focus {
+  border-color: var(--accent);
+  background: var(--bg-card);
+}
+
+.tag-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  padding: 3px 0;
+}
+.tag-chip {
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+  gap: 4px;
+}
+.tag-chip button {
+  border: none;
+  background: transparent;
+  color: var(--accent-ink);
+  font-size: 10px;
+  cursor: pointer;
+  padding: 0;
+}
+.tag-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12.5px;
+  min-width: 70px;
+  height: 24px;
+}
+
+.modal-side-foot {
+  margin-top: auto;
+  padding-top: 16px;
+}

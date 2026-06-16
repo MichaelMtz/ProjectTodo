@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Chat — Executive Plan</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --panel: #ffffff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --accent: #0369a1;
+    --user-bg: #eef6ff;
+    --user-border: #93c5fd;
+    --assistant-bg: #ffffff;
+    --assistant-border: #e5e7eb;
+    --code-bg: #0f172a;
+    --code-ink: #e2e8f0;
+    --inline-code-bg: #eef2f7;
+    --inline-code-ink: #b91c1c;
+    --table-border: #e5e7eb;
+    --table-head: #f1f5f9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  header.page {
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    color: #fff;
+    padding: 28px 24px;
+  }
+  header.page h1 {
+    margin: 0 0 6px 0;
+    font-size: 1.6rem;
+    letter-spacing: -0.01em;
+    color: white;
+  }
+  header.page .meta {
+    opacity: 0.85;
+    font-size: 0.9rem;
+  }
+  main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+  }
+  main > section {
+    margin: 0 0 12px 0;
+  }
+  main > section:first-child > h2:first-child {
+    margin-top: 0;
+  }
+  h2 {
+    font-size: 1.25rem;
+    margin: 28px 0 10px;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 6px;
+  }
+  h3 {
+    font-size: 1.05rem;
+    margin: 20px 0 8px;
+  }
+  h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 14px 0 6px;
+    color: #334155;
+  }
+  p { margin: 10px 0; }
+  ul, ol { padding-left: 22px; margin: 10px 0; }
+  li { margin: 4px 0; }
+  hr {
+    border: none;
+    border-top: 1px dashed #cbd5e1;
+    margin: 22px 0;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 0.92rem;
+    background: #fff;
+  }
+  th, td {
+    border: 1px solid var(--table-border);
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--table-head);
+    font-weight: 600;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--inline-code-bg);
+    color: var(--inline-code-ink);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 14px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    margin: 12px 0;
+  }
+  pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+  }
+  blockquote {
+    border-left: 4px solid #cbd5e1;
+    margin: 12px 0;
+    padding: 4px 14px;
+    color: #475569;
+    background: #f8fafc;
+  }
+  /* Markdown task-list items: "- [ ] foo" / "- [x] foo" */
+  .task-list-item { list-style: none; }
+  .task-list-item input[type="checkbox"] {
+    margin-right: 8px;
+    transform: translateY(1px);
+  }
+
+  /* ---------- Layout with sidebar ---------- */
+  .layout {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 28px;
+    padding: 0 20px;
+  }
+  .layout > main {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 920px;
+    margin: 0;
+    padding: 24px 0 80px;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    flex: 0 0 300px;
+    position: sticky;
+    top: 16px;
+    align-self: flex-start;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    padding: 20px 0;
+  }
+  .sidebar-inner {
+    background: #f1f3f6;
+    border: 1px solid #e2e6ec;
+    border-radius: 12px;
+    padding: 14px 12px;
+  }
+  .sidebar-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #6b7280;
+    padding: 4px 8px 10px;
+  }
+  .prompt-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ---------- Section card (sidebar) ---------- */
+  .prompt-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #ffffff;
+    border: 1px solid #e2e6ec;
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.05s ease;
+  }
+  .prompt-card:hover {
+    border-color: #93c5fd;
+    background: #fafcff;
+  }
+  .prompt-card:active { transform: translateY(1px); }
+  .prompt-card .card-num {
+    flex: 0 0 28px;
+    height: 28px;
+    width: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: #eef2f7;
+    color: #94a3b8;
+    border: 1px solid #e2e6ec;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .prompt-card .card-body {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .prompt-card .card-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .prompt-card .card-sub {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .prompt-card.active {
+    border-color: #0369a1;
+    background: #eff6ff;
+    box-shadow: 0 0 0 1px #0369a1 inset;
+  }
+  .prompt-card.active .card-num {
+    background: #0369a1;
+    color: #ffffff;
+    border-color: #0369a1;
+  }
+  .prompt-card.active .card-title {
+    color: #0c4a6e;
+  }
+
+  /* Anchor offset so clicked sections aren't flush to viewport edge */
+  main > section[id^="section-"],
+  main h2,
+  main h3,
+  main h4 {
+    scroll-margin-top: 16px;
+  }
+
+  /* ---------- Bookmark toggle on headings ---------- */
+  main h2,
+  main h3,
+  main h4 {
+    position: relative;
+    padding-right: 36px;
+  }
+  .bookmark-toggle {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0;
+    opacity: 1;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+  .bookmark-toggle:hover { color: #0369a1; background: #eff6ff; }
+  .bookmark-toggle:focus { outline: 2px solid #93c5fd; outline-offset: 1px; }
+  .bookmark-toggle.is-bookmarked { color: #0369a1; }
+  .bookmark-toggle svg { display: block; }
+
+  /* ---------- Sidebar bookmarks section ---------- */
+  .bookmark-section {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e6ec;
+  }
+  .bookmark-empty {
+    font-size: 0.78rem;
+    color: #6b7280;
+    padding: 4px 8px 6px;
+    line-height: 1.4;
+  }
+  .bookmark-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bookmark-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #ffffff;
+    border: 1px solid #e2e6ec;
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 0.83rem;
+    line-height: 1.3;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+  .bookmark-card:hover {
+    border-color: #93c5fd;
+    background: #fafcff;
+  }
+  .bookmark-card.active {
+    border-color: #0369a1;
+    background: #eff6ff;
+    box-shadow: 0 0 0 1px #0369a1 inset;
+  }
+  .bookmark-card .bm-icon {
+    flex: 0 0 16px;
+    color: #0369a1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .bookmark-card .bm-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #1f2937;
+  }
+  .bookmark-card .bm-remove {
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .bookmark-card:hover .bm-remove,
+  .bookmark-card .bm-remove:focus { opacity: 1; }
+  .bookmark-card .bm-remove:hover { color: #b91c1c; background: #fee2e2; }
+
+  /* ---------- Reading progress bar ---------- */
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, #0369a1 0%, #38bdf8 100%);
+    z-index: 200;
+    transition: width 0.08s linear;
+    pointer-events: none;
+  }
+
+  /* ---------- Hamburger (mobile only) ---------- */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 120;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid #e2e6ec;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.15);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .menu-toggle:hover { background: #fafcff; border-color: #93c5fd; }
+  .menu-toggle .bars {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .menu-toggle .bars span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: #1f2937;
+    border-radius: 1px;
+  }
+
+  /* ---------- Drawer backdrop ---------- */
+  .drawer-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 110;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .drawer-backdrop.is-open {
+    display: block;
+    opacity: 1;
+  }
+
+  .sidebar-close {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #e2e6ec;
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 1;
+  }
+  .sidebar-close:hover { background: #f1f5f9; color: #1f2937; }
+
+  body.no-scroll { overflow: hidden; }
+
+  /* ---------- Responsive: sidebar becomes off-canvas drawer ---------- */
+  @media (max-width: 1024px) {
+    .layout { padding: 0; }
+    .layout > main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+    .menu-toggle { display: flex; }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 320px;
+      max-width: 85vw;
+      max-height: none;
+      z-index: 115;
+      background: #f1f3f6;
+      overflow-y: auto;
+      padding: 16px 12px;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      box-shadow: 2px 0 16px rgba(0, 0, 0, 0.12);
+    }
+    .sidebar.is-open { transform: translateX(0); }
+    .sidebar-inner {
+      background: transparent;
+      border: none;
+      padding: 36px 6px 6px;
+    }
+    .sidebar-close { display: flex; }
+  }
+
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 40px 0 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar" aria-hidden="true"></div>
+
+<button class="menu-toggle" id="menuToggle" type="button" aria-label="Open section menu" aria-controls="sidebar" aria-expanded="false">
+  <span class="bars"><span></span><span></span><span></span></span>
+</button>
+
+<div class="drawer-backdrop" id="drawerBackdrop" aria-hidden="true"></div>
+
+<header class="page">
+  <h1>AI Chat — Executive Plan</h1>
+  <div class="meta">10-minute exec digest of the SnoCountry AI chat plan • generated from <code>ai-chat-executive-plan.md</code></div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar" id="sidebar" aria-label="Section navigation">
+    <button class="sidebar-close" id="sidebarClose" type="button" aria-label="Close section menu">×</button>
+    <div class="sidebar-inner">
+      <div class="sidebar-title">Sections</div>
+      <nav class="prompt-list" id="promptList">
+        <a class="prompt-card" href="#section-1" data-target="section-1">
+          <div class="card-num">1</div>
+          <div class="card-body">
+            <div class="card-title">Executive summary</div>
+            <div class="card-sub">Phases, headcount, costs, gates</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-2" data-target="section-2">
+          <div class="card-num">2</div>
+          <div class="card-body">
+            <div class="card-title">POC objectives</div>
+            <div class="card-sub">Four binary questions in 6 weeks</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-3" data-target="section-3">
+          <div class="card-num">3</div>
+          <div class="card-body">
+            <div class="card-title">POC budget</div>
+            <div class="card-sub">Together AI + RunPod portability</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-4" data-target="section-4">
+          <div class="card-num">4</div>
+          <div class="card-body">
+            <div class="card-title">Production build</div>
+            <div class="card-sub">Foundation → UI → stress test → soft launch</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-5" data-target="section-5">
+          <div class="card-num">5</div>
+          <div class="card-body">
+            <div class="card-title">Cost model</div>
+            <div class="card-sub">Year-1 monthly + one-time costs</div>
+          </div>
+        </a>
+        <a class="prompt-card" href="#section-6" data-target="section-6">
+          <div class="card-num">6</div>
+          <div class="card-body">
+            <div class="card-title">Things you might miss</div>
+            <div class="card-sub">13 one-liners — legal, partners, a11y, ops</div>
+          </div>
+        </a>
+      </nav>
+
+      <section class="bookmark-section" aria-label="Bookmarks">
+        <div class="sidebar-title">Bookmarks</div>
+        <div class="bookmark-empty" id="bookmarkEmpty">
+          Click the bookmark icon next to any heading to save it here.
+        </div>
+        <nav class="bookmark-list" id="bookmarkList"></nav>
+      </section>
+    </div>
+  </aside>
+
+<main>
+
+<p>This plan covers what we're building, how long it takes, what it costs, and what could trip us up. It's a 10-minute read for non-engineers. The full technical companion is <code>concepts/deployment-plan.md</code>.</p>
+<p><strong>In plain English: what we're building.</strong> A snow-and-resort chatbot embedded on snocountry.com that answers questions about ski conditions, resort recommendations, and recent news — like a ChatGPT that only knows skiing and pulls from our live data.</p>
+<p>You'll see two AI techniques referenced throughout. Both have plain-English meanings:</p>
+<ul>
+<li><strong>RAG (Retrieval-Augmented Generation)</strong> — at question time, we inject the latest snow conditions and the most relevant articles into the AI's context, so its answers are current. This is how the bot answers <em>&quot;how's Vail today?&quot;</em> with real numbers instead of guessing.</li>
+<li><strong>Fine-tuning</strong> — we teach a base AI model SnoCountry's tone of voice using a small, swappable add-on called a <strong>LoRA</strong> (think: a expert snow reporter plug-in for the AI vs non-local giving snow condition advice). Cheap, fast, reversible.</li>
+<li><strong>turn</strong> - In chatbot land, a <strong>turn</strong> = one user message + one AI response. That's the atomic unit of a conversation. A typical session is 2–4 turns.</li>
+</ul>
+<p>Total wall-clock from kickoff to public launch: <strong>~22 weeks</strong>. Total v1 budget: <strong>~$1,650 cloud + ~18 dev-weeks of labor</strong>.</p>
+<hr>
+
+
+<section id="section-1">
+<h2>1. Executive summary</h2>
+<p>(From full plan §1.)</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Weeks</th>
+<th>Headcount</th>
+<th>Goal</th>
+<th>Cost ceiling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>POC (proof of concept)</strong></td>
+<td>1–6</td>
+<td>1 dev + 1 LLM designer + ¼ PM</td>
+<td>Prove the bot can answer well, fast, and cheap on real SnoCountry data. Test fine-tuning. Test portability across providers. End with a pivot third party (api) vs dedicated system decision.</td>
+<td>~$700</td>
+</tr>
+<tr>
+<td><strong>Production build</strong></td>
+<td>7–18</td>
+<td>1 dev + 1 LLM designer + ¼ PM</td>
+<td>Full bot: chat panel, complete fine tuning, safety guardrails, RAG tuning, partner integrations, &quot;smart cards&quot; for resorts/articles/sponsors</td>
+<td>$750 + ~$50</td>
+</tr>
+<tr>
+<td><strong>Stress test + infra decision</strong></td>
+<td>16–18 (overlaps)</td>
+<td>1 dev</td>
+<td>Load-test the bot; decide if we stay on pay-per-use AI service (Together AI) or move to dedicated GPU hardware</td>
+<td>$200</td>
+</tr>
+<tr>
+<td><strong>Soft launch</strong></td>
+<td>19–20</td>
+<td>full team + on-call</td>
+<td>Quietly ship to one resort page first, then expand; watch closely</td>
+<td>actuals</td>
+</tr>
+<tr>
+<td><strong>Iterate / scale</strong></td>
+<td>21+</td>
+<td>1 dev sustaining</td>
+<td>Improve the bot from real conversations; expand to more pages</td>
+<td>model-driven</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Four key gates</strong>:</p>
+<ol>
+<li><strong>End of Week 3</strong> — Stock-model + RAG quality check. Fine tuning of model to SnoCountry data.</li>
+<li><strong>End of Week 6</strong> — POC knowledge: ship to production, pivot model/provider.</li>
+<li><strong>End of Week 17</strong> — Pay-per-use AI service vs. dedicated hardware decision, based on real traffic data.</li>
+<li><strong>End of Week 20</strong> — Public launch decision based on soft-launch metrics.</li>
+</ol>
+<hr>
+
+</section>
+
+<section id="section-2">
+<h2>2. POC objectives</h2>
+<p>(From full plan §2.1.)</p>
+<p>The POC answers four binary questions in 6 weeks:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Pass condition (in plain English)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q1</td>
+<td>Does an off-the-shelf AI + light RAG produce acceptable answers for SnoCountry's use cases?</td>
+<td>At least 80% (16/20) of test questions land at &quot;good&quot; or better when reviewed by hand.</td>
+</tr>
+<tr>
+<td>Q2</td>
+<td>Does fine-tuning meaningfully improve answers, tone, or cost?</td>
+<td>Either +5 percentage points of quality, <strong>or</strong> ≥30% cost cut by switching to a smaller model.</td>
+</tr>
+<tr>
+<td>Q3</td>
+<td>Is the fine-tuned model <strong>portable</strong> between providers? (Avoid lock-in to Together AI.)</td>
+<td>Same questions get comparable answers when our model runs on RunPod (a competitor) — within ±5%.</td>
+</tr>
+<tr>
+<td>Q4</td>
+<td>Is the cost-per-conversation acceptable?</td>
+<td>Under <strong>$0.01 per turn</strong> at our projected v1 traffic.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+
+</section>
+
+<section id="section-3">
+<h2>3. POC budget</h2>
+<p>(From full plan §2.4.)</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Together AI tokens (testing, exploration)</td>
+<td>~$120</td>
+</tr>
+<tr>
+<td>One LoRA fine-tune (the personality plug-in)</td>
+<td>~$16</td>
+</tr>
+<tr>
+<td>Together AI dedicated endpoint trial</td>
+<td>~$100</td>
+</tr>
+<tr>
+<td>RunPod H100 GPU rental (5 days, portability test)</td>
+<td>~$300</td>
+</tr>
+<tr>
+<td>HuggingFace private model storage (free tier covers LoRA adapters)</td>
+<td>$0</td>
+</tr>
+<tr>
+<td>Embedding the article + resort corpus (preparing content for AI search)</td>
+<td>~$120</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>~$656</strong></td>
+</tr>
+</tbody>
+</table>
+<p>We round to <strong>$700</strong> as the ceiling. Keep tabs on budget, to determine if need provider change.</p>
+<hr>
+
+</section>
+
+<section id="section-4">
+<h2>4. Production build — week-by-week</h2>
+<p>(From full plan §3.)</p>
+<p>Three sub-phases, ~12 weeks total.</p>
+<h3>4.1 Phase A — Foundation hardening (Weeks 7–10)</h3>
+<p>Build the engine end-to-end at production quality. No public exposure yet.</p>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>What ships</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7</td>
+<td>Database tables for tracking conversations; live RAG endpoint snow-data endpoint optimization;  (per-resort context)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Region-context, recommendation, and search articles, resort blurbs (vector semantic search) endpoints</td>
+</tr>
+<tr>
+<td>9</td>
+<td>The main chat brain: routes the question, enforces token (word) budgets, streams answers, runs all five <strong>guardrail layers</strong> (safety filters that keep the bot on-topic and prevent abuse)</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Tracking endpoint, automatic indexing of articles + resort overviews, expand corpus to top 50 resorts</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Gate at end of Week 10:</strong> every endpoint behaves to spec; jailbreak test suite passes 100% on critical-severity attacks.</p>
+<h3>4.2 Phase B — Chat UI + smart cards (Weeks 11–14)</h3>
+<p>This is where the user sees the product. The chat panel is straightforward; the <strong>smart cards</strong> (entity highlighting) is the differentiating feature.</p>
+<p>When the bot mentions Copper Mountain, a resort card appears next to the chat with current conditions, lift status, an upcoming event, a relevant article, and a sponsor card — all sourced from existing SnoCountry endpoints. Like clicking a hyperlink that becomes a dashboard.</p>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>What ships</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>11</td>
+<td>Chat widget skeleton; first end-to-end &quot;answer streams to the screen&quot;; Pick smart-card strategy (the AI emits structured data vs. we post-process its text)</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Resort card + article card; live data hydration</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Sponsor card (reuses existing <code>/api/ads</code>); event card (curated content for v1)</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Polish: keyboard accessibility, screen-reader labels, mobile bottom-sheet UX; deploy to one canary page (e.g. <code>/snow-report/colorado/copper-mountain/</code>)</td>
+</tr>
+</tbody>
+</table>
+<h3>4.3 Phase C — Stress test + hardware decision (Weeks 16–18)</h3>
+<p>Run in parallel with the last two weeks of Phase B.</p>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>What ships</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>16</td>
+<td>Stress-test scripts (k6, a load-testing tool) — ramp, peak burst, steady-state, single-resort flood</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Run all four scenarios on Together AI; <strong>and</strong> run them against a RunPod (dedicated hardware) deployment with our fine-tuned model loaded</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Decision: stay pay-per-use (default for v1) or move to dedicated hardware. Document instant kill-switch and rehearse rollback.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Default decision:</strong> stay on the pay-per-use API for v1; revisit 90 days post-launch with real traffic. Dedicated hardware only wins above ~250k turns/month sustained.</p>
+<h3>4.4 Phase D — Soft launch (Weeks 19–20)</h3>
+<p>Soft launch is <strong>not</strong> a feature freeze. It's a controlled traffic ramp.</p>
+<table>
+<thead>
+<tr>
+<th>When</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Week 19, day 1</td>
+<td>Live on 1 canary page (<code>/snow-report/colorado/copper-mountain/</code>). Internal team only. Slack alerts on every error.</td>
+</tr>
+<tr>
+<td>Week 19, day 2–3</td>
+<td>Open to 10% of organic traffic via cookie flag. Monitor cost, latency, blocked-question rate.</td>
+</tr>
+<tr>
+<td>Week 19, day 4–5</td>
+<td>If healthy, open to 100% of canary page.</td>
+</tr>
+<tr>
+<td>Week 20</td>
+<td>Add 2 more canary pages (different traffic profiles).</td>
+</tr>
+<tr>
+<td>End of Week 20</td>
+<td>Public launch decision.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rollback:</strong> a feature flag (<code>window.__SNO_CHAT_ENABLED</code>) lets ops disable the chat instantly without a deploy. Tested in Week 18.</p>
+<hr>
+
+</section>
+
+<section id="section-5">
+<h2>5. Cost model (post-POC)</h2>
+<p>(From full plan §9. Assumes pay-per-use API path. Numbers are conservative.)</p>
+<h3>5.1 Year-1 monthly run rate</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Low (5k turns/mo)</th>
+<th>Mid (50k turns/mo)</th>
+<th>High (250k turns/mo)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Together AI inference (the AI doing the work)</td>
+<td>$15</td>
+<td>$150</td>
+<td>$750</td>
+</tr>
+<tr>
+<td>Together AI embeddings (refreshing what the AI can search through)</td>
+<td>$1</td>
+<td>$5</td>
+<td>$20</td>
+</tr>
+<tr>
+<td>Convex usage (database + backend)</td>
+<td>$0</td>
+<td>$25</td>
+<td>$100</td>
+</tr>
+<tr>
+<td>Continual fine-tuning (monthly polish)</td>
+<td>$0–$50</td>
+<td>$50</td>
+<td>$50</td>
+</tr>
+<tr>
+<td>Engineering sustaining (½ FTE)</td>
+<td>included</td>
+<td>included</td>
+<td>included</td>
+</tr>
+<tr>
+<td><strong>Monthly total (cloud only)</strong></td>
+<td><strong>~$20</strong></td>
+<td><strong>~$230</strong></td>
+<td><strong>~$920</strong></td>
+</tr>
+</tbody>
+</table>
+<p>At 250k turns/month sustained, dedicated hardware breaks even with the API. We re-test then.</p>
+<h3>5.1.1 What these traffic tiers mean in users</h3>
+<p>The cost table is denominated in <em>turns</em> (one user question + one bot answer). Translating that to actual headcount needs a couple of behavior assumptions:</p>
+<ul>
+<li><strong>Avg turns per session: ~3</strong> (many <em>&quot;how's Vail today?&quot;</em> one-shots, balanced by 4–8-turn trip-planning sessions).</li>
+<li><strong>Avg sessions per user per month: ~2</strong> (casual planners do 1; regulars do 4–8).</li>
+<li><strong>→ ~6 turns per user per month</strong> (3 × 2).</li>
+<li><strong>Chat opt-in rate: ~10%</strong> of total site visitors actually open the chat (the other 90% just browse). Industry-typical for embedded chatbots on content sites.</li>
+<li><strong>Peak-season skew: ~2×</strong> the monthly average during Dec–Mar.</li>
+</ul>
+<h4>Central estimate</h4>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Low (5k turns/mo)</th>
+<th>Mid (50k turns/mo)</th>
+<th>High (250k turns/mo)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Chat users per month (MAU)</strong></td>
+<td><strong>~830</strong></td>
+<td><strong>~8,300</strong></td>
+<td><strong>~42,000</strong></td>
+</tr>
+<tr>
+<td>Chat users per day (avg)</td>
+<td>~28</td>
+<td>~280</td>
+<td>~1,400</td>
+</tr>
+<tr>
+<td>Chat users per day (peak ski season)</td>
+<td>~55</td>
+<td>~550</td>
+<td>~2,800</td>
+</tr>
+<tr>
+<td><strong>Implied total site MAU</strong> (chat ≈ 10% of visitors)</td>
+<td>~8,300</td>
+<td>~83,000</td>
+<td>~420,000</td>
+</tr>
+<tr>
+<td>Sessions per month</td>
+<td>~1,700</td>
+<td>~17,000</td>
+<td>~83,000</td>
+</tr>
+</tbody>
+</table>
+<h4>Sensitivity — engagement is the biggest unknown</h4>
+<p>The numbers above assume 6 turns/user/month. If real engagement differs:</p>
+<table>
+<thead>
+<tr>
+<th>Engagement profile</th>
+<th>Turns/user/mo</th>
+<th>Low MAU</th>
+<th>Mid MAU</th>
+<th>High MAU</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Mostly drive-by checkers</strong> (1-turn sessions)</td>
+<td>3</td>
+<td>1,700</td>
+<td>17,000</td>
+<td>83,000</td>
+</tr>
+<tr>
+<td><strong>Central estimate</strong> <em>(used above)</em></td>
+<td>6</td>
+<td><strong>830</strong></td>
+<td><strong>8,300</strong></td>
+<td><strong>42,000</strong></td>
+</tr>
+<tr>
+<td><strong>Engaged trip-planners + power users</strong></td>
+<td>10</td>
+<td>500</td>
+<td>5,000</td>
+<td>25,000</td>
+</tr>
+</tbody>
+</table>
+<p>Real MAU at 50k turns/mo is somewhere between <strong>5,000 and 17,000</strong>, central guess <strong>~8,300</strong>. Tighten after the first month of soft-launch data lands.</p>
+<h4>Plain-English read</h4>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>What this looks like in real life</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Low</strong> (~800 chat MAU)</td>
+<td>Beta / launch month. A few hundred curious visitors per week. Easy to read every conversation manually.</td>
+</tr>
+<tr>
+<td><strong>Mid</strong> (~8k chat MAU)</td>
+<td>Established niche product. Real product feedback signal; daily monitoring becomes a job.</td>
+</tr>
+<tr>
+<td><strong>High</strong> (~42k chat MAU)</td>
+<td>Mainstream feature. Sampling-based review only; full LLM ops discipline (alerting, on-call, cost controls) is mandatory.</td>
+</tr>
+</tbody>
+</table>
+<h3>5.2 One-time costs</h3>
+<ul>
+<li><strong>POC:</strong> ~$700 (Section 3)</li>
+<li><strong>Production build labor:</strong> ~18 dev-weeks at internal rate</li>
+<li><strong>Initial corpus build</strong> (50 resort overviews): ~80 hours of content authoring</li>
+<li><strong>Legal review</strong> (Terms of Service / privacy update): ~$250 outside counsel or in-house equivalent</li>
+<li><strong>Brand / UX design pass:</strong> ~2 designer-weeks</li>
+</ul>
+<hr>
+
+</section>
+
+<section id="section-6">
+<h2>6. Things you might be missing — one-liners</h2>
+<p>(From full plan §7. Each item is one easy-to-forget thing that bites later.)</p>
+<ol>
+<li><strong>Embeddable widget for partners</strong> — Resort partners may want this on their own sites — plan a partner widget for v1.x with a <code>partnerId</code> parameter for tracking and ad attribution.</li>
+<li><strong>Legal / compliance</strong> — Update Terms of Service and privacy policy; build a &quot;forget my chat data&quot; endpoint for EU/CA users (GDPR/CCPA); verify resort-data and news-article licenses allow AI use.</li>
+<li><strong>Brand &amp; content review</strong> — Have the content lead manually review 100 chat responses before launch; explicitly ban medical, avalanche-safety, and gambling questions; workshop the canned refusal copy (it'll be seen thousands of times).</li>
+<li><strong>Accessibility (a11y — screen readers, keyboard users)</strong> — Keyboard navigation through the chat and cards; screen-reader labels on streamed text; verify color contrast; respect reduced-motion preferences.</li>
+<li><strong>SEO (Google ranking)</strong> — Make sure chat conversations don't end up in Google's index; add Schema.org markup if you display an FAQ block; sitemap stays unchanged.</li>
+<li><strong>Internal tooling</strong> — Build a &quot;chat replay&quot; admin tool (given a request ID, show the full prompt, sources, response, metrics) — half a day, indispensable for debugging user reports; also a corpus-health dashboard.</li>
+<li><strong>Partner / content relationships</strong> — Notify the top 30 resort partners before launch; mark sponsor cards clearly as &quot;Sponsored&quot;; plan a soft-launch press post that frames the bot as an <em>assistant</em>, not an <em>oracle</em>.</li>
+<li><strong>Observability</strong> — Wire Sentry (an error-tracking service) for chat-widget JS errors; detect and fall back when streaming connections fail; tag every conversation with which page launched it.</li>
+<li><strong>Personalization (defer, but design for it)</strong> — Browser geolocation enables <em>&quot;you're in Denver — try A-Basin&quot;</em>; integrate the existing bookmarks feature into chat suggestions; plan server-side chat history once user accounts ship.</li>
+<li><strong>Multi-language</strong> — English-only for v1, but Spanish/French is plausible for v1.5 with mostly system-prompt work.</li>
+<li><strong>Mobile UX</strong> — Bottom-sheet pattern instead of side panel; voice input via the browser's speech API (a big UX win, low effort); tap-to-fold cards so they don't dominate the screen.</li>
+<li><strong>Disaster recovery</strong> — Convex snapshots → weekly export to S3/R2 (cloud storage); resort-overview source files live in git; fine-tune adapters mirrored to two providers.</li>
+<li><strong>Internal LLM gateway (post-v1)</strong> — Once 2+ surfaces use AI (e.g., chat + an editor &quot;summarize this resort&quot; tool), centralize through a single AI-provider module with rate limits, retries, and per-surface cost ceilings — about a dev-week of work.</li>
+</ol>
+<hr>
+<p><em>Companion documents:</em></p>
+<ul>
+<li><code>concepts/deployment-plan.md</code> — full technical plan.</li>
+<li><code>concepts/rag-plan.md</code> — architecture and API specs.</li>
+<li><code>concepts/rag-jailbreak-tests.md</code> — adversarial test suite.</li>
+</ul>
+<p><em>Document version: v1 — drafted 2026-05-08</em></p>
+
+</section>
+
+<div class="footer">
+  Generated from <code>ai-chat-executive-plan.md</code> via <code>scripts/build-executive-plan-html.js</code>
+</div>
+
+</main>
+</div>
+
+<script>
+  (function () {
+    // ---------- DOM refs ----------
+    const cards = Array.from(document.querySelectorAll('.prompt-card'));
+    const targets = cards
+      .map(c => document.getElementById(c.dataset.target))
+      .filter(Boolean);
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('drawerBackdrop');
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebarClose = document.getElementById('sidebarClose');
+    const progressBar = document.getElementById('progressBar');
+    const bookmarkList = document.getElementById('bookmarkList');
+    const bookmarkEmpty = document.getElementById('bookmarkEmpty');
+
+    const STORAGE_KEY = 'ai-chat-executive-plan:bookmarks:v1';
+    const isMobile = () => window.matchMedia('(max-width: 1024px)').matches;
+
+    // ---------- Drawer ----------
+    function openDrawer() {
+      sidebar.classList.add('is-open');
+      backdrop.classList.add('is-open');
+      document.body.classList.add('no-scroll');
+      if (menuToggle) menuToggle.setAttribute('aria-expanded', 'true');
+    }
+    function closeDrawer() {
+      sidebar.classList.remove('is-open');
+      backdrop.classList.remove('is-open');
+      document.body.classList.remove('no-scroll');
+      if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    if (menuToggle) menuToggle.addEventListener('click', openDrawer);
+    if (sidebarClose) sidebarClose.addEventListener('click', closeDrawer);
+    if (backdrop) backdrop.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && sidebar.classList.contains('is-open')) closeDrawer();
+    });
+
+    function smoothScrollTo(el) {
+      if (isMobile()) {
+        closeDrawer();
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 260);
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    // ---------- Section cards ----------
+    cards.forEach(card => {
+      card.addEventListener('click', e => {
+        e.preventDefault();
+        const el = document.getElementById(card.dataset.target);
+        if (!el) return;
+        smoothScrollTo(el);
+        history.replaceState(null, '', '#' + card.dataset.target);
+        setActiveSection(card.dataset.target);
+      });
+    });
+
+    function setActiveSection(id) {
+      cards.forEach(c => c.classList.toggle('active', c.dataset.target === id));
+    }
+
+    if ('IntersectionObserver' in window && targets.length) {
+      const observer = new IntersectionObserver(
+        entries => {
+          const visible = entries
+            .filter(e => e.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          if (visible.length) setActiveSection(visible[0].target.id);
+        },
+        { rootMargin: '-15% 0px -70% 0px', threshold: 0 }
+      );
+      targets.forEach(t => observer.observe(t));
+    }
+
+    if (location.hash) {
+      const hashId = location.hash.replace('#', '');
+      if (cards.some(c => c.dataset.target === hashId)) setActiveSection(hashId);
+    } else if (cards.length) {
+      setActiveSection(cards[0].dataset.target);
+    }
+
+    // ---------- Heading IDs + bookmark toggles ----------
+    function slugify(text) {
+      return (text || '')
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+    }
+
+    function bookmarkIconSVG(filled) {
+      return '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="' +
+        (filled ? 'currentColor' : 'none') +
+        '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+    }
+
+    const usedIds = new Set();
+    document.querySelectorAll('[id]').forEach(el => usedIds.add(el.id));
+
+    const headings = Array.from(document.querySelectorAll('main h2, main h3, main h4'));
+    headings.forEach(h => {
+      if (!h.id) {
+        let base = 'h-' + slugify(h.textContent || '');
+        if (base === 'h-') base = 'h-section';
+        let id = base;
+        let n = 2;
+        while (usedIds.has(id)) {
+          id = base + '-' + n;
+          n++;
+        }
+        h.id = id;
+        usedIds.add(id);
+      }
+      addBookmarkToggle(h);
+    });
+
+    function addBookmarkToggle(h) {
+      if (h.querySelector('.bookmark-toggle')) return;
+      const labelText = (h.textContent || '').replace(/\s+/g, ' ').trim();
+      const btn = document.createElement('button');
+      btn.className = 'bookmark-toggle';
+      btn.type = 'button';
+      btn.setAttribute('aria-label', 'Toggle bookmark for ' + labelText);
+      btn.dataset.targetId = h.id;
+      btn.dataset.label = labelText;
+      btn.innerHTML = bookmarkIconSVG(false);
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleBookmark(h.id, labelText);
+      });
+      h.appendChild(btn);
+    }
+
+    // ---------- Bookmarks store ----------
+    function loadBookmarks() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) { return []; }
+    }
+    function saveBookmarks(arr) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+      catch (e) { /* silent */ }
+    }
+
+    let bookmarks = loadBookmarks();
+
+    function isBookmarked(id) {
+      return bookmarks.some(b => b.targetId === id);
+    }
+
+    function toggleBookmark(id, label) {
+      if (isBookmarked(id)) {
+        bookmarks = bookmarks.filter(b => b.targetId !== id);
+      } else {
+        bookmarks.push({
+          targetId: id,
+          label: label,
+          addedAt: new Date().toISOString()
+        });
+      }
+      saveBookmarks(bookmarks);
+      renderBookmarks();
+    }
+
+    // ---------- Bookmark rendering ----------
+    let bookmarkObserver = null;
+
+    function renderBookmarks() {
+      document.querySelectorAll('.bookmark-toggle').forEach(btn => {
+        const isOn = isBookmarked(btn.dataset.targetId);
+        btn.classList.toggle('is-bookmarked', isOn);
+        btn.innerHTML = bookmarkIconSVG(isOn);
+      });
+
+      if (!bookmarkList) return;
+      bookmarkList.innerHTML = '';
+
+      if (bookmarks.length === 0) {
+        if (bookmarkEmpty) bookmarkEmpty.style.display = 'block';
+      } else {
+        if (bookmarkEmpty) bookmarkEmpty.style.display = 'none';
+        bookmarks.forEach(b => {
+          const card = document.createElement('a');
+          card.className = 'bookmark-card';
+          card.href = '#' + b.targetId;
+          card.dataset.target = b.targetId;
+          card.title = b.label;
+          card.innerHTML =
+            '<span class="bm-icon">' + bookmarkIconSVG(true) + '</span>' +
+            '<span class="bm-label"></span>' +
+            '<button class="bm-remove" type="button" aria-label="Remove bookmark">×</button>';
+          card.querySelector('.bm-label').textContent = b.label;
+          card.addEventListener('click', e => {
+            if (e.target.closest('.bm-remove')) {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleBookmark(b.targetId, b.label);
+              return;
+            }
+            e.preventDefault();
+            const el = document.getElementById(b.targetId);
+            if (!el) return;
+            smoothScrollTo(el);
+            history.replaceState(null, '', '#' + b.targetId);
+          });
+          bookmarkList.appendChild(card);
+        });
+      }
+      refreshBookmarkObserver();
+    }
+
+    function refreshBookmarkObserver() {
+      if (bookmarkObserver) {
+        bookmarkObserver.disconnect();
+        bookmarkObserver = null;
+      }
+      if (!('IntersectionObserver' in window) || bookmarks.length === 0) return;
+      bookmarkObserver = new IntersectionObserver(
+        entries => {
+          const visible = entries
+            .filter(e => e.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          if (visible.length) {
+            const id = visible[0].target.id;
+            document.querySelectorAll('.bookmark-card').forEach(c => {
+              c.classList.toggle('active', c.dataset.target === id);
+            });
+          }
+        },
+        { rootMargin: '-15% 0px -70% 0px', threshold: 0 }
+      );
+      bookmarks.forEach(b => {
+        const el = document.getElementById(b.targetId);
+        if (el) bookmarkObserver.observe(el);
+      });
+    }
+
+    renderBookmarks();
+
+    // ---------- Reading progress bar ----------
+    let ticking = false;
+    function updateProgress() {
+      const doc = document.documentElement;
+      const scrollTop = window.scrollY || doc.scrollTop;
+      const scrollHeight = doc.scrollHeight - doc.clientHeight;
+      const pct = scrollHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / scrollHeight) * 100)) : 0;
+      if (progressBar) progressBar.style.width = pct + '%';
+      ticking = false;
+    }
+    function onScroll() {
+      if (!ticking) {
+        window.requestAnimationFrame(updateProgress);
+        ticking = true;
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    updateProgress();
+  })();
+</script>
+
+</body>
+</html>

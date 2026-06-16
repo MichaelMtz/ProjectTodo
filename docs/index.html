@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnoCountry AI Chat — Concept &amp; Plan</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --panel: #ffffff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --accent: #0369a1;
+    --accent-deep: #075985;
+    --border: #e2e6ec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  header.page {
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    color: #fff;
+    padding: 36px 24px;
+  }
+  header.page .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+  header.page h1 {
+    margin: 0 0 8px 0;
+    font-size: 1.7rem;
+    letter-spacing: -0.01em;
+  }
+  header.page p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.95rem;
+    max-width: 70ch;
+  }
+  main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+  section.group {
+    margin-bottom: 36px;
+  }
+  section.group h2 {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .doc-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  @media (min-width: 720px) {
+    .doc-grid { grid-template-columns: 1fr 1fr; }
+    .doc-grid .doc-card.wide { grid-column: 1 / -1; }
+  }
+  .doc-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px 20px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+  }
+  .doc-card:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  }
+  .doc-card:active { transform: translateY(1px); }
+  .doc-card .label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+  }
+  .doc-card h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--ink);
+  }
+  .doc-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .doc-card .footer-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .doc-card .footer-row .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #eef2f7;
+    border-radius: 999px;
+    color: #475569;
+  }
+  .file-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  @media (min-width: 720px) {
+    .file-list { grid-template-columns: 1fr 1fr; }
+  }
+  .file-list li {
+    margin: 0;
+  }
+  .file-list a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    font-size: 0.9rem;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .file-list a:hover {
+    border-color: #93c5fd;
+    background: #fafcff;
+  }
+  .file-list .ext {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #eef2f7;
+    color: #475569;
+    flex-shrink: 0;
+  }
+  .file-list .ext.md { background: #ecfeff; color: #0e7490; }
+  .file-list .ext.json { background: #fef3c7; color: #92400e; }
+  .file-list .ext.js { background: #fee2e2; color: #991b1b; }
+  .file-list .ext.html { background: #ede9fe; color: #5b21b6; }
+  .file-list .ext.png { background: #dcfce7; color: #166534; }
+  .file-list .name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  details {
+    margin-top: 14px;
+    padding: 14px 18px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  details > summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--ink);
+    list-style: none;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 8px;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  details[open] > summary::before {
+    transform: rotate(90deg);
+  }
+  details pre {
+    margin: 12px 0 0;
+    padding: 12px 14px;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+  details code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: transparent;
+    color: inherit;
+  }
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 50px 0 10px;
+  }
+  .hidden {
+    display:none;
+  }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="wrap">
+    <h1>SnoCountry AI Chat — Concept &amp; Plan</h1>
+    <p>Working drafts and supporting material for an AI chat assistant on snocountry.com. Four readable docs below; raw markdown and tooling underneath.</p>
+  </div>
+</header>
+
+<main>
+
+  <section class="group">
+    <h2>Interactive demos</h2>
+    <div class="doc-grid">
+
+      <a class="doc-card" target="_blank" href="demo.html">
+        <span class="label">Live demo · Generative UI</span>
+        <h3>Snow Copilot — Single Resort Report</h3>
+        <p>Chat-style interface that renders a rich snow report card for Taos Ski Valley. Shows the generative UI concept: structured data cards instead of plain text.</p>
+        <div class="footer-row">
+          <span class="pill">dark/light theme</span>
+          <span class="pill">simulated RAG</span>
+          <span class="pill">interactive</span>
+        </div>
+      </a>
+
+      <a class="doc-card" target="_blank" href="demo-compare.html">
+        <span class="label">Live demo · Resort Comparison</span>
+        <h3>Snow Copilot — Multi-Resort Comparison</h3>
+        <p>Side-by-side comparison table for Colorado I-70 resorts. Checkboxes let you narrow the selection and re-compare — demonstrating interactive generative UI components.</p>
+        <div class="footer-row">
+          <span class="pill">comparison table</span>
+          <span class="pill">re-compare</span>
+          <span class="pill">5 resorts</span>
+        </div>
+      </a>
+
+      <a class="doc-card" target="_blank" href="demo-state.html">
+        <span class="label">Live demo · State Listing</span>
+        <h3>Snow Copilot — Colorado State Listing</h3>
+        <p>Resort comparison card scoped to Colorado with a link-out to the SnoCountry state snow-report page — showing how generative UI ties chat answers to regional listings.</p>
+        <div class="footer-row">
+          <span class="pill">state scope</span>
+          <span class="pill">comparison table</span>
+          <span class="pill">link-out</span>
+        </div>
+      </a>
+
+      <a class="doc-card" target="_blank" href="demo-resort-sponsor.html">
+        <span class="label">Live demo · Sponsored Banner</span>
+        <h3>Snow Copilot — Resort Report with Sponsor</h3>
+        <p>Single-resort snow report for Taos Ski Valley with a sponsored banner placement below the generative UI card — preview of ad inventory inside the copilot thread.</p>
+        <div class="footer-row">
+          <span class="pill">sponsor banner</span>
+          <span class="pill">Taos</span>
+          <span class="pill">728×90</span>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>Readable docs</h2>
+    <div class="doc-grid">
+
+      <a class="doc-card" href="ai-chat-diagram.html">
+        <span class="label">Interactive diagram · 5 min</span>
+        <h3>AI Chatbot System Flow</h3>
+        <p>Visual walkthrough of the full RAG pipeline: from user query through embedding, vector retrieval, prompt assembly, and LLM inference to final response.</p>
+        <div class="footer-row">
+          <span class="pill">interactive</span>
+          <span class="pill">system architecture</span>
+          <span class="pill">data flow</span>
+        </div>
+      </a>
+      <a class="doc-card " href="ai-chat-one-page.html">
+        <span class="label">Elevator Summary · 5 min</span>
+        <h3>AI Chat — One-Page Proposal</h3>
+        <p>The whole thing on one page: timeline with real dates (May 18 kickoff → Oct 5 launch), cost, outcomes, and what it enables next. Print-friendly. Send this to leadership.</p>
+        <div class="footer-row">
+          <span class="pill">dated timeline</span>
+          <span class="pill">printable</span>
+          <span class="pill">decision-ready</span>
+        </div>
+      </a>
+
+      <a class="doc-card" href="ai-chat-executive-plan.html">
+        <span class="label">Exec digest · 10 min</span>
+        <h3>AI Chat — Executive Plan</h3>
+        <p>Plain-English digest for non-engineers. Phases, gates, costs, and the one-line list of things easy to forget.</p>
+        <div class="footer-row">
+          <span class="pill">6 sections</span>
+          <span class="pill">no jargon</span>
+          <span class="pill">bookmarks</span>
+        </div>
+      </a>
+
+      <a class="doc-card" href="deployment-plan.html">
+        <span class="label">Full plan · 30 min</span>
+        <h3>Deployment Plan</h3>
+        <p>End-to-end engineering plan: 6-week POC, 12-week production build, stress test, soft launch, ongoing operations.</p>
+        <div class="footer-row">
+          <span class="pill">11 sections</span>
+          <span class="pill">technical</span>
+          <span class="pill">bookmarks</span>
+        </div>
+      </a>
+
+
+
+      <a class="doc-card wide " href="AI-on-site-concept.html" id="conversation-log-card">
+        <span class="label">Conversation log</span>
+        <h3>On-site AI Concept — original Q&amp;A thread</h3>
+        <p>The full original chat that produced these plans. Captures the reasoning behind every decision: GPU capacity, fine-tuning, RAG, guardrails, deployment phases, evaluation. Sidebar lists every prompt; bookmark headings for later.</p>
+        <div class="footer-row">
+          <span class="pill">verbatim transcript</span>
+          <span class="pill">bookmarks</span>
+        </div>
+      </a>
+
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>Markdown sources</h2>
+    <ul class="file-list">
+    <!--
+      <li><a href="ai-chat-one-page.md"><span class="ext md">md</span><span class="name">ai-chat-one-page.md</span></a></li>
+      <li><a href="ai-chat-executive-plan.md"><span class="ext md">md</span><span class="name">ai-chat-executive-plan.md</span></a></li>
+    -->
+      <li><a href="deployment-plan.md"><span class="ext md">md</span><span class="name">deployment-plan.md</span></a></li>
+      <li><a href="rag-plan.md"><span class="ext md">md</span><span class="name">rag-plan.md — RAG architecture &amp; endpoints</span></a></li>
+      <li><a href="rag-jailbreak-tests.md"><span class="ext md">md</span><span class="name">rag-jailbreak-tests.md — adversarial test suite</span></a></li>
+      <li><a href="api-endpoints.md"><span class="ext md">md</span><span class="name">api-endpoints.md — current registry</span></a></li>
+    </ul>
+  </section>
+
+  <section class="group">
+    <h2>Evaluation sets</h2>
+    <ul class="file-list">
+      <li><a href="eval/README.md"><span class="ext md">md</span><span class="name">eval/README.md — schema, rubric, harness</span></a></li>
+      <li><a href="eval/poc-eval.json"><span class="ext json">json</span><span class="name">eval/poc-eval.json — 20 questions for POC</span></a></li>
+      <li><a href="eval/full-eval.json"><span class="ext json">json</span><span class="name">eval/full-eval.json — 30+ questions, expanding to 100</span></a></li>
+    </ul>
+  </section>
+
+  <section class="group">
+    <h2>Build tooling</h2>
+    <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 0.9rem;">
+      The HTML versions of the plans are generated from their markdown sources. Edit the <code>.md</code>, re-run the corresponding script, and the matching <code>.html</code> is regenerated. Both build scripts use the same shared template and library, so they stay visually consistent.
+    </p>
+    <ul class="file-list">
+      <li><a href="scripts/build-one-page-html.js"><span class="ext js">js</span><span class="name">scripts/build-one-page-html.js</span></a></li>
+      <li><a href="scripts/build-deployment-html.js"><span class="ext js">js</span><span class="name">scripts/build-deployment-html.js</span></a></li>
+      <li><a href="scripts/build-executive-plan-html.js"><span class="ext js">js</span><span class="name">scripts/build-executive-plan-html.js</span></a></li>
+      <li><a href="scripts/lib/build-doc.js"><span class="ext js">js</span><span class="name">scripts/lib/build-doc.js — shared md→html builder (multi-section docs)</span></a></li>
+      <li><a href="scripts/templates/doc-template.html"><span class="ext html">html</span><span class="name">scripts/templates/doc-template.html — shared shell for sidebar+bookmarks docs</span></a></li>
+      <li><a href="scripts/templates/one-page-template.html"><span class="ext html">html</span><span class="name">scripts/templates/one-page-template.html — print-friendly one-pager shell</span></a></li>
+    </ul>
+    <details>
+      <summary>How to rebuild the HTML docs</summary>
+      <pre><code>cd src/assets/ai-chat-concept
+
+node scripts/build-one-page-html.js
+# → writes ai-chat-one-page.html
+
+node scripts/build-deployment-html.js
+# → writes deployment-plan.html
+
+node scripts/build-executive-plan-html.js
+# → writes ai-chat-executive-plan.html</code></pre>
+    </details>
+  </section>
+
+  <section class="group">
+    <h2>Reference material</h2>
+    <ul class="file-list">
+      <li><a href="resort-data-sample.json"><span class="ext json">json</span><span class="name">resort-data-sample.json — example RAG payload</span></a></li>
+    </ul>
+  </section>
+
+  <div class="footer">
+    SnoCountry AI Chat working drafts · v1 · 2026-05-08
+  </div>
+
+</main>
+
+<script>
+  // Reveal the gated "Conversation log" card only when ?display=all is present.
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('display') === 'all') {
+      console.log('--Unhide conversation log card');
+      var el = document.getElementById('conversation-log-card');
+      if (el) el.classList.remove('hidden');
+    }
+  })();
+</script>
+
+</body>
+</html>

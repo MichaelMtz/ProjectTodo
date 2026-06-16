@@ -1,0 +1,20 @@
+# 2026 Summer projects 
+- AI Chat bot (high: 18 weeks) 
+- Summer resort page: refactor (med: 3-5 days)
+- State conditions pull from faster API (med: 1 week)
+ - Normalize to build on client (JS)
+- Home page conditions pull from faster API (small: 1 day) 
+- Snow scraping (High: x weeks)
+ - Expand: Midwest, ...
+ - Tweak display
+ - Incorporate new ai scraping tech
+- New CMS (News / Article generation) (high: 2 weeks) 
+ - Authors, publishers,
+ - Import existing article database 
+- Replace radio / news server (med: 1 week)
+ - Add ftp radio capability on cheaper server
+- Search + News / Articles (after New CMS) : (small: 1 day)
+- Systems Admin panel (UI for logging errors, long latency calls) (med: 1 week)
+- SnoCountry.com mobile: AI refactor : (med: 1 week)
+- SnoCountry.com desktop: AI refactor cleanup code : (med: 1 week)
+- Refactor Resort backdoor/admin area: (high: 2 weeks) (ready for 27-28 season)

@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snow Copilot — Generative UI Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --slate-950: #0a0e1a;
+      --slate-900: #111827;
+      --slate-800: #1e293b;
+      --slate-700: #334155;
+      --slate-500: #64748b;
+      --slate-400: #94a3b8;
+      --slate-300: #cbd5e1;
+      --ice-50: #f0f9ff;
+      --ice-100: #e0f2fe;
+      --ice-200: #bae6fd;
+      --ice-400: #38bdf8;
+      --ice-500: #0ea5e9;
+      --powder-blue: #7dd3fc;
+      --frost: rgba(255, 255, 255, 0.04);
+      --card-bg: rgba(15, 23, 42, 0.6);
+      --font-display: 'Instrument Serif', serif;
+      --font-body: 'DM Sans', sans-serif;
+      --snowflake-color: rgba(255, 255, 255, 0.15);
+      --bg-gradient-1: rgba(14, 165, 233, 0.06);
+      --bg-gradient-2: rgba(125, 211, 252, 0.04);
+      --bg-gradient-base-start: rgba(10, 14, 26, 1);
+      --bg-gradient-base-end: rgba(17, 24, 39, 1);
+      --card-border: rgba(125, 211, 252, 0.12);
+      --card-shine: var(--ice-400);
+      --stat-bg: rgba(255, 255, 255, 0.03);
+      --stat-border: rgba(255, 255, 255, 0.05);
+      --stat-hover-border: rgba(125, 211, 252, 0.15);
+      --tag-bg: rgba(125, 211, 252, 0.1);
+      --tag-border: rgba(125, 211, 252, 0.15);
+      --footer-border: rgba(255, 255, 255, 0.04);
+      --user-msg-bg: var(--slate-800);
+      --user-msg-border: var(--slate-700);
+      --input-bg: var(--slate-900);
+      --input-border: var(--slate-700);
+      --input-focus-shadow: rgba(14, 165, 233, 0.08);
+      --scrollbar-color: var(--slate-700);
+    }
+
+    [data-theme="light"] {
+      --slate-950: #ffffff;
+      --slate-900: #f8fafc;
+      --slate-800: #f1f5f9;
+      --slate-700: #e2e8f0;
+      --slate-500: #64748b;
+      --slate-400: #475569;
+      --slate-300: #1e293b;
+      --ice-50: #f0f9ff;
+      --ice-100: #0c4a6e;
+      --ice-200: #0e4a6e;
+      --ice-400: #0284c7;
+      --ice-500: #0369a1;
+      --powder-blue: #0369a1;
+      --frost: rgba(0, 0, 0, 0.02);
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --snowflake-color: rgba(14, 165, 233, 0.12);
+      --bg-gradient-1: rgba(14, 165, 233, 0.05);
+      --bg-gradient-2: rgba(125, 211, 252, 0.06);
+      --bg-gradient-base-start: rgba(248, 250, 252, 1);
+      --bg-gradient-base-end: rgba(240, 249, 255, 1);
+      --card-border: rgba(14, 165, 233, 0.15);
+      --card-shine: #0ea5e9;
+      --stat-bg: rgba(240, 249, 255, 0.7);
+      --stat-border: rgba(14, 165, 233, 0.08);
+      --stat-hover-border: rgba(14, 165, 233, 0.25);
+      --tag-bg: rgba(14, 165, 233, 0.08);
+      --tag-border: rgba(14, 165, 233, 0.18);
+      --footer-border: rgba(0, 0, 0, 0.06);
+      --user-msg-bg: #e0f2fe;
+      --user-msg-border: #bae6fd;
+      --input-bg: #ffffff;
+      --input-border: #e2e8f0;
+      --input-focus-shadow: rgba(14, 165, 233, 0.12);
+      --scrollbar-color: #cbd5e1;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--slate-950);
+      color: var(--slate-300);
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Atmospheric background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, var(--bg-gradient-1) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 80%, var(--bg-gradient-2) 0%, transparent 50%),
+        radial-gradient(ellipse 100% 100% at 50% 50%, var(--bg-gradient-base-start) 0%, var(--bg-gradient-base-end) 100%);
+      z-index: 0;
+    }
+
+    /* Subtle noise grain */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .app-container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 1.5rem;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .header h1 {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 400;
+      color: var(--ice-200);
+      letter-spacing: -0.01em;
+    }
+
+    .header h1 span {
+      font-style: italic;
+      color: var(--powder-blue);
+    }
+
+    .header p {
+      margin-top: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--slate-500);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    /* Chat area */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1.25rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--slate-700) transparent;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      background: var(--frost);
+      backdrop-filter: blur(6px);
+    }
+
+    .chat-area::-webkit-scrollbar { width: 4px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb { background: var(--scrollbar-color); border-radius: 4px; }
+
+    /* Messages */
+    .message {
+      display: flex;
+      gap: 0.75rem;
+      animation: messageIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes messageIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user { justify-content: flex-end; }
+
+    .message-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .message.assistant .message-avatar {
+      background: linear-gradient(135deg, var(--ice-500), var(--powder-blue));
+      color: var(--slate-950);
+      font-weight: 700;
+    }
+
+    .message-content {
+      max-width: 85%;
+    }
+
+    .message.user .message-content {
+      background: var(--user-msg-bg);
+      border: 1px solid var(--user-msg-border);
+      border-radius: 16px 16px 16px 16px;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      color: var(--slate-300);
+    }
+
+    .message.assistant .message-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .assistant-text {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--slate-300);
+    }
+
+    /* Thinking indicator */
+    .thinking {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem 0;
+      animation: messageIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .thinking-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .thinking-dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ice-400);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+
+    .thinking-label {
+      font-size: 0.78rem;
+      color: var(--slate-500);
+      font-style: italic;
+    }
+
+    /* Snow Report Card — Generative UI */
+    .snow-report-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      animation: cardReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: 0.1s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .snow-report-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--card-shine), transparent);
+      opacity: 0.4;
+    }
+
+    @keyframes cardReveal {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-header-icon {
+      font-size: 1.4rem;
+    }
+
+    .card-header-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card-header-title-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-start;
+      gap: 0.75rem;
+    }
+
+    .card-header-title-row h3 {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      color: var(--ice-100);
+      font-weight: 400;
+      min-width: 0;
+    }
+
+    .card-header-text span {
+      font-size: 0.7rem;
+      color: var(--slate-500);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .card-resort-link {
+      font-size: 0.7rem;
+      color: var(--slate-500);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+
+    .card-resort-link:hover {
+      color: var(--ice-400);
+      text-decoration: underline;
+      text-decoration-color: rgba(56, 189, 248, 0.35);
+      text-underline-offset: 2px;
+    }
+
+    .card-header-title-row .card-resort-link {
+      flex-shrink: 0;
+    }
+
+    .card-header-title-row .card-resort-link {
+      margin-left: 51px;
+    }
+    .card-footer .card-resort-link {
+      margin-left: auto;
+    }
+
+    .card-badge {
+      margin-left: auto;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ice-400);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .card-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+
+    .stat-cell {
+      background: var(--stat-bg);
+      border: 1px solid var(--stat-border);
+      border-radius: 10px;
+      padding: 0.75rem 0.6rem;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+
+    .stat-cell:hover {
+      border-color: var(--stat-hover-border);
+    }
+
+    .stat-value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--ice-100);
+      display: block;
+      line-height: 1.2;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--slate-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.3rem;
+      display: block;
+    }
+
+    .stat-cell.highlight .stat-value {
+      color: var(--powder-blue);
+    }
+
+    .card-weather {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-top: 0.75rem;
+      padding: 0.6rem 0.75rem;
+      background: var(--stat-bg);
+      border: 1px solid var(--stat-border);
+      border-radius: 10px;
+    }
+
+    .weather-icon {
+      font-size: 1.3rem;
+    }
+
+    .weather-temp {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--ice-100);
+    }
+
+    .weather-desc {
+      font-size: 0.78rem;
+      color: var(--slate-500);
+      margin-left: auto;
+    }
+
+    .card-footer {
+      margin-top: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--footer-border);
+    }
+
+    .condition-tag {
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      background: var(--tag-bg);
+      color: var(--powder-blue);
+      border: 1px solid var(--tag-border);
+    }
+
+    .updated-time {
+      font-size: 0.68rem;
+      color: var(--slate-500);
+      margin-left: auto;
+    }
+
+    .season-celebration-inline {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.45rem 0.6rem;
+      margin-top: 0.75rem;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: var(--slate-400);
+    }
+
+    .season-celebration-copy {
+      flex: 1;
+      min-width: 10rem;
+    }
+
+    .season-celebration-copy .event-label {
+      font-weight: 800;
+      font-style: normal;
+      letter-spacing: 0.03em;
+      color: var(--slate-300);
+    }
+
+    .season-celebration-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-shrink: 0;
+      padding: 0.35rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-decoration: none;
+      color: var(--slate-950);
+      background: linear-gradient(135deg, var(--ice-500), var(--powder-blue));
+      transition: transform 0.15s, opacity 0.15s;
+      white-space: nowrap;
+    }
+
+    .season-celebration-pill:hover {
+      transform: scale(1.04);
+    }
+
+    .season-celebration-pill:active {
+      transform: scale(0.97);
+    }
+
+    .season-celebration-pill svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    /* Input area */
+    .input-area {
+      flex-shrink: 0;
+      padding-top: 1rem;
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 14px;
+      padding: 0.5rem 0.6rem 0.5rem 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: var(--ice-500);
+      box-shadow: 0 0 0 3px var(--input-focus-shadow);
+    }
+
+    .input-wrapper input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      color: var(--slate-300);
+    }
+
+    .input-wrapper input::placeholder {
+      color: var(--slate-500);
+    }
+
+    .send-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, var(--ice-500), var(--powder-blue));
+      color: var(--slate-950);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, opacity 0.15s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover { transform: scale(1.05); }
+    .send-btn:active { transform: scale(0.95); }
+    .send-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+
+    .send-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .input-hint {
+      text-align: center;
+      margin-top: 0.6rem;
+      font-size: 0.7rem;
+      color: var(--slate-500);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .input-hint:hover {
+      color: var(--ice-400);
+    }
+
+    /* Snowflake particles */
+    .snowflakes {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .snowflake {
+      position: absolute;
+      top: -10px;
+      width: 3px;
+      height: 3px;
+      background: var(--snowflake-color);
+      border-radius: 50%;
+      animation: fall linear infinite;
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.25rem;
+      z-index: 10;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: transform 0.2s, border-color 0.2s, background 0.3s;
+      backdrop-filter: blur(8px);
+    }
+
+    .theme-toggle:hover {
+      transform: scale(1.08);
+      border-color: var(--ice-500);
+    }
+
+    .theme-toggle:active { transform: scale(0.95); }
+
+    .theme-toggle .icon-sun,
+    .theme-toggle .icon-moon { transition: opacity 0.3s, transform 0.3s; position: absolute; }
+
+    .theme-toggle .icon-sun { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+    .theme-toggle .icon-moon { opacity: 1; transform: rotate(0deg) scale(1); }
+
+    [data-theme="light"] .theme-toggle .icon-sun { opacity: 1; transform: rotate(0deg) scale(1); }
+    [data-theme="light"] .theme-toggle .icon-moon { opacity: 0; transform: rotate(90deg) scale(0.5); }
+
+    /* Smooth transition on theme change */
+    body, body::before,
+    .snow-report-card, .stat-cell, .input-wrapper,
+    .message.user .message-content, .condition-tag, .card-footer,
+    .theme-toggle {
+      transition: background 0.4s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    /* Light mode noise reduction */
+    [data-theme="light"] body::after {
+      opacity: 0.008;
+    }
+
+    @keyframes fall {
+      to { transform: translateY(100vh) rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Theme toggle -->
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+    <span class="icon-moon">🌙</span>
+    <span class="icon-sun">☀️</span>
+  </button>
+
+  <!-- Snowflake particles -->
+  <div class="snowflakes" id="snowflakes"></div>
+
+  <div class="app-container">
+    <div class="header">
+      <h1>SnoCountry <span>AI Copilot</span></h1>
+      <p>Generative UI · Proof of Concept</p>
+    </div>
+
+    <div class="chat-area" id="chatArea">
+      <!-- Messages populate here -->
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrapper">
+        <input
+          type="text"
+          id="chatInput"
+          placeholder="Ask about snow conditions..."
+          autocomplete="off"
+        />
+        <button class="send-btn" id="sendBtn" aria-label="Send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <p class="input-hint">Try: "What's the snow report for Taos?" or "Conditions at Taos Ski Valley"</p>
+    </div>
+  </div>
+
+  <script>
+    // --- Theme toggle ---
+    const taosURL = 'https://snocountry.com/snow-report/new-mexico/taos-ski-valley/';
+
+    const themeToggle = document.getElementById('themeToggle');
+    // Default to light mode
+    document.documentElement.setAttribute('data-theme', 'light');
+
+    themeToggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      document.documentElement.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+    });
+
+    // --- Snowflake particles ---
+    const snowContainer = document.getElementById('snowflakes');
+    for (let i = 0; i < 30; i++) {
+      const flake = document.createElement('div');
+      flake.className = 'snowflake';
+      flake.style.left = Math.random() * 100 + '%';
+      flake.style.animationDuration = (8 + Math.random() * 12) + 's';
+      flake.style.animationDelay = Math.random() * 8 + 's';
+      flake.style.opacity = 0.05 + Math.random() * 0.12;
+      flake.style.width = flake.style.height = (2 + Math.random() * 2) + 'px';
+      snowContainer.appendChild(flake);
+    }
+
+    // --- Chat logic (simulated, no backend) ---
+    const chatArea = document.getElementById('chatArea');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    function addMessage(type, content) {
+      const msg = document.createElement('div');
+      msg.className = `message ${type}`;
+      msg.innerHTML = content;
+      chatArea.appendChild(msg);
+      chatArea.scrollTop = chatArea.scrollHeight;
+      return msg;
+    }
+
+    function showThinking() {
+      const el = document.createElement('div');
+      el.className = 'thinking';
+      el.innerHTML = `
+        <div class="thinking-dots"><span></span><span></span><span></span></div>
+        <span class="thinking-label">Searching snow reports & analyzing conditions...</span>
+      `;
+      chatArea.appendChild(el);
+      chatArea.scrollTop = chatArea.scrollHeight;
+      return el;
+    }
+
+    function renderSnowReport() {
+      return `
+        <div class="message assistant" style="animation-delay: 0.1s">
+          <div class="message-avatar">SC</div>
+          <div class="message-content">
+            <div class="assistant-text">Here's today's snow report for Taos Ski Valley:</div>
+            <div class="snow-report-card">
+              <div class="card-header">
+                <span class="card-header-icon">🏔️</span>
+                <div class="card-header-text">
+                  <div class="card-header-title-row">
+                    <h3>Taos Ski Valley</h3>
+                    <a href="${taosURL}" class="card-resort-link" target="_blank" rel="noopener noreferrer">For complete Taos details →</a>
+                  </div>
+                  <span>New Mexico · Elev. 11,819 ft</span>
+                </div>
+                <span class="card-badge">95% Open</span>
+              </div>
+              <div class="card-stats">
+                <div class="stat-cell highlight">
+                  <span class="stat-value">8"</span>
+                  <span class="stat-label">New Snow</span>
+                </div>
+                <div class="stat-cell">
+                  <span class="stat-value">62"</span>
+                  <span class="stat-label">Base</span>
+                </div>
+                <div class="stat-cell">
+                  <span class="stat-value">12/14</span>
+                  <span class="stat-label">Lifts</span>
+                </div>
+                <div class="stat-cell">
+                  <span class="stat-value">105/110</span>
+                  <span class="stat-label">Trails Open</span>
+                </div>
+              </div>
+              <div class="card-weather">
+                <span class="weather-icon">☀️</span>
+                <span class="weather-temp">25°F</span>
+                <span class="weather-desc">Sunny · Wind 5 mph W</span>
+              </div>
+      
+              <div class="card-footer">
+                <span class="condition-tag">Powder</span>
+                <span class="condition-tag">Bluebird</span>
+                <a href="${taosURL}" class="card-resort-link" target="_blank" rel="noopener noreferrer">For complete Taos details →</a>
+                <span class="updated-time">Updated 6:42 AM</span>
+              </div>
+            </div>
+            <div class="assistant-text" style="font-size: 0.82rem; color: var(--slate-400); margin-top: 0.25rem;">
+              8 inches of fresh overnight — Kachina Peak and the West Basin Ridge are skiing deep. Lifts 1, 2, 4, and 7A opened at 9 AM.
+              <span class="season-celebration-inline">
+                <span class="season-celebration-copy"><em><span class="event-label">Event:</span> Join us for our Season Celebration as we come together to wrap up...<em></span>
+                <a href="${taosURL}" class="card-resort-link" target="_blank" rel="noopener noreferrer">
+                  More details →
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function isTaosRelated(text) {
+      return text.toLowerCase().includes('taos');
+    }
+
+    function renderFallback() {
+      return `
+        <div class="message assistant" style="animation-delay: 0.1s">
+          <div class="message-avatar">SC</div>
+          <div class="message-content">
+            <div class="assistant-text">
+              This is a Proof of Concept — what you're seeing is a preview of how we want to build the <strong> Next Generation SnoCountry AI Copilot </strong> with rich Generative UI snow reports from LLM responses. <em>No plain text for SnoCountry</em>.<br/><br/> The full pipeline (RAG + fine-tuned model) isn't live yet, but the architecture is ready. <strong>Say the word and we'll build it.</strong>
+            </div>
+
+          </div>
+        </div>
+      `;
+    }
+
+    async function handleSend() {
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      chatInput.value = '';
+      sendBtn.disabled = true;
+
+      // User message
+      addMessage('user', `<div class="message-content">${text}</div>`);
+
+      // Thinking state
+      await delay(600);
+      const thinking = showThinking();
+
+      // Simulate RAG retrieval + LLM inference time
+      await delay(isTaosRelated(text) ? 2200 : 1400);
+      thinking.remove();
+
+      // Generative UI response or fallback
+      if (isTaosRelated(text)) {
+        chatArea.insertAdjacentHTML('beforeend', renderSnowReport());
+      } else {
+        chatArea.insertAdjacentHTML('beforeend', renderFallback());
+      }
+      chatArea.scrollTop = chatArea.scrollHeight;
+
+      sendBtn.disabled = false;
+      chatInput.focus();
+    }
+
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    const DEFAULT_PROMPT = 'Conditions at Taos Ski Valley';
+    let autoSendTimer = null;
+
+    function cancelAutoSend() {
+      if (autoSendTimer) {
+        clearTimeout(autoSendTimer);
+        autoSendTimer = null;
+      }
+    }
+
+    sendBtn.addEventListener('click', () => {
+      cancelAutoSend();
+      handleSend();
+    });
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        cancelAutoSend();
+        handleSend();
+      }
+    });
+
+    // Input hint click — fills input and auto-sends
+    const inputHint = document.querySelector('.input-hint');
+    inputHint.addEventListener('click', () => {
+      cancelAutoSend();
+      const text = "What's the snow report for Taos?";
+      chatInput.value = text;
+      chatInput.focus();
+      setTimeout(() => handleSend(), 500);
+    });
+
+    // Auto-demo: pre-fill default prompt after brief pause
+    setTimeout(() => {
+      chatInput.value = DEFAULT_PROMPT;
+      chatInput.focus();
+    }, 500);
+
+    // Auto-send default prompt if user hasn't sent within 5 seconds
+    autoSendTimer = setTimeout(() => {
+      chatInput.value = DEFAULT_PROMPT;
+      handleSend();
+    }, 1000);
+  </script>
+</body>
+</html>

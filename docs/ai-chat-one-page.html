@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Chat for SnoCountry — One-Page</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --panel: #ffffff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --accent: #0369a1;
+    --accent-soft: #eff6ff;
+    --accent-deep: #0c4a6e;
+    --border: #e5e7eb;
+    --table-head: #f1f5f9;
+    --inline-code-bg: #eef2f7;
+    --inline-code-ink: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  header.page {
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    color: #fff;
+    padding: 24px 28px;
+  }
+  header.page .wrap { max-width: 920px; margin: 0 auto; }
+  header.page h1 {
+    margin: 0 0 4px 0;
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+  }
+  header.page .meta {
+    opacity: 0.85;
+    font-size: 0.85rem;
+  }
+
+  main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 24px 28px 60px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+
+  h2, h3 { color: var(--ink); }
+  h2 {
+    font-size: 1.05rem;
+    margin: 22px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--accent);
+    color: var(--accent-deep);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+  }
+  h2:first-of-type { margin-top: 4px; }
+  h3 {
+    font-size: 0.95rem;
+    margin: 14px 0 6px;
+    font-weight: 700;
+  }
+  p { margin: 8px 0; }
+  ul, ol { padding-left: 22px; margin: 8px 0; }
+  li { margin: 5px 0; }
+
+  blockquote {
+    border-left: 4px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 12px 18px;
+    margin: 14px 0;
+    border-radius: 0 8px 8px 0;
+    color: var(--accent-deep);
+  }
+  blockquote > p { margin: 0; }
+  blockquote strong { color: var(--accent-deep); }
+
+  hr {
+    border: none;
+    border-top: 1px dashed #cbd5e1;
+    margin: 18px 0;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0;
+    font-size: 0.86rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 7px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--table-head);
+    font-weight: 600;
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.86em;
+    background: var(--inline-code-bg);
+    color: var(--inline-code-ink);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* Companion-docs footer */
+  main > p > em:first-child,
+  main em:first-child { color: var(--muted); }
+
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin: 30px 0 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Print stylesheet — single-page friendly */
+  @media print {
+    body { background: #fff; font-size: 10.5pt; }
+    main {
+      max-width: none;
+      padding: 12px 18px;
+      border: none;
+    }
+    header.page {
+      background: #0369a1 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      padding: 14px 20px;
+      color: white;
+    }
+    header.page h1 { font-size: 16pt; color:white; }
+    header.page .meta { font-size: 9pt; }
+    h2 {
+      font-size: 11pt;
+      margin: 14px 0 4px;
+      page-break-after: avoid;
+    }
+    h2 + p, h2 + table, h2 + ul, h2 + ol, h2 + blockquote { page-break-before: avoid; }
+    table, tr, blockquote { page-break-inside: avoid; }
+    p, li { line-height: 1.35; }
+    .footer { font-size: 8pt; }
+  }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="wrap">
+    <h1>AI Chat for SnoCountry — One-Page</h1>
+    <div class="meta">Executive Elevator summary • Web page generated from <code>ai-chat-one-page.md</code></div>
+  </div>
+</header>
+
+<main>
+
+<blockquote>
+<p><strong>Timeline Overview:</strong> 6-week proof of concept starting <strong>Mon, May 18, 2026</strong> with Production development beginning <strong>June 29th</strong>.  Soft launch on canary pages <strong>Sep 21</strong>. Public launch <strong>Mon, Oct 5, 2026</strong>.</p>
+</blockquote>
+<hr>
+<h2>Timeline (kickoff Mon, May 18, 2026)</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Dates</th>
+<th>Wks</th>
+<th>Headcount</th>
+<th>What happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>POC (proof of concept)</strong></td>
+<td>May 18 – Jun 26</td>
+<td>1–6</td>
+<td>1 dev + 1 LLM designer + ¼ PM</td>
+<td>Prove the bot can answer well, fast, and cheap on real SnoCountry data. Test fine-tuning. Test portability across providers. Explore third party (api) vs dedicated system decision.</td>
+</tr>
+<tr>
+<td><strong>Production build</strong></td>
+<td>Jun 29 – Sep 18</td>
+<td>7–18</td>
+<td>1 dev + 1 LLM designer + ¼ PM</td>
+<td>Build the production engine end-to-end: chat panel, &quot;smart cards&quot; for resorts/articles/sponsors, five-layer safety guardrails, monitoring, partner integrations.</td>
+</tr>
+<tr>
+<td><strong>Stress + infra decision</strong></td>
+<td>Aug 31 – Sep 18</td>
+<td>16–18</td>
+<td>1 LLM designer <em>(overlaps build team)</em></td>
+<td>Load-test under programmable 200-user bursts. Confirm caps. Decide pay-per-use AI service vs dedicated GPU. Default: stay pay-per-use.</td>
+</tr>
+<tr>
+<td><strong>Soft launch</strong></td>
+<td>Sep 21 – Oct 2</td>
+<td>19–20</td>
+<td>SnoCountry team rotation reviewing conversations</td>
+<td>Quietly ship to one resort page, internal live testing, ramp 10% → 100% of canary traffic, expand to 3 pages, watch every conversation.</td>
+</tr>
+<tr>
+<td><strong>Public launch</strong></td>
+<td><strong>Mon, Oct 5, 2026</strong></td>
+<td>21+</td>
+<td>1 dev sustaining </td>
+<td>Roll out site-wide. Continual learning + monthly fine-tuning kick in.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Four milestones</strong>:</p>
+<ol>
+<li><strong>Fri, Jun 5</strong> <em>(end of Week 3)</em> — early quality check on the stock model. Fine-tuning calibration path.</li>
+<li><strong>Fri, Jun 26</strong> <em>(end of Week 6)</em> — POC knowledge: start production build, Identify model/provider.</li>
+<li><strong>Fri, Sep 11</strong> <em>(end of Week 17)</em> — pay-per-use vs dedicated GPU decision based on load test traffic data.</li>
+<li><strong>Fri, Oct 5</strong> <em>(end of Week 20)</em> — public launch decision based on soft-launch metrics.</li>
+</ol>
+<hr>
+<h2>Cost</h2>
+<table>
+<thead>
+<tr>
+<th>Bucket</th>
+<th>Amount</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>POC cloud spend</strong> (Weeks 1–6)</td>
+<td>~$700</td>
+<td>Together AI tokens, fine-tuning, RunPod portability test</td>
+</tr>
+<tr>
+<td><strong>Production build cloud</strong> (Weeks 7–18)</td>
+<td>~$800</td>
+<td>Together AI inference + embeddings + ~$50 fine-tunes</td>
+</tr>
+<tr>
+<td><strong>Year-1 monthly run rate</strong> (cloud)</td>
+<td>$20–$920/mo</td>
+<td>Scales with traffic: ~$20 at 5k turns/mo (~800 chat users), ~$920 at 250k turns/mo (~42k chat users)</td>
+</tr>
+<tr>
+<td><strong>Legal review</strong> (one-time)</td>
+<td>~$250</td>
+<td>ToS + privacy update</td>
+</tr>
+<tr>
+<td><strong>Initial content corpus</strong> (one-time)</td>
+<td>~ xx hours</td>
+<td>50 hand-authored resort overviews</td>
+</tr>
+<tr>
+<td><strong>Engineering</strong></td>
+<td>~18 dev-weeks</td>
+<td>1 LLM designer for POC + production; (Lead Dev (MIM) salaried)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total v1 launch budget: ~$1,500 cloud + ~$250 legal + ~18 dev-weeks of labor.</strong></p>
+<hr>
+<h2>What we get at launch (outcomes)</h2>
+<ul>
+<li><strong>A first-of-its-kind feature for SnoCountry</strong> — the first AI chat on the site, embedded on resort and snow-report pages. Visible product win, story for press and partners.</li>
+<li><strong>Competitive parity</strong> — With existing OnTheSnow and Perplexity-style &quot;answer engines&quot;.  This project places SnoCountry in a competitive position.</li>
+<li><strong>An elegant, hardened experience</strong> — not the ChatGPT bolt-on that OTS offers. On-brand tone (Real Skiers and Riders who know the snow), five-layer safety guardrails, jailbreak test suite, refusal copy reviewed by content lead, sponsor disclosure built in.</li>
+<li><strong>Smart cards alongside answers</strong> — ask about Copper Mountain, get the chat answer <em>plus</em> a live conditions card, lift status, an upcoming event, a relevant article, and a sponsor card — all from existing SnoCountry endpoints.</li>
+<li><strong>Operational maturity from day one</strong> — monitoring dashboards, on-call runbook, cost alerts, instant kill-switch (feature flag), vendor-failover plan. Built <em>before</em> a crisis, not after.</li>
+<li><strong>A reusable backbone</strong> — the Retrieval-Augmented Generation (RAG) corpus + chat orchestrator becomes the foundation for every future AI feature, internal or external. One investment, many surfaces.</li>
+</ul>
+<hr>
+<h2>What it enables  (benefits)</h2>
+<ul>
+<li><strong>Deeper user engagement</strong> — Q&amp;A invites longer sessions, more engagement, more entity-card clicks (each click is a measurable revenue surface).</li>
+<li><strong>Embeddable partner widget</strong> <em>(planned v1.5)</em> — ship the chat as a <code>&lt;script&gt;</code> snippet that radio stations, resort partners, and ski shops drop onto their own sites. Each carries a <code>partnerId</code> for traffic attribution and ad-revenue share. <strong>Partner sites become SnoCountry traffic sources.</strong></li>
+<li><strong>First-party data signal</strong> — every conversation tells us what users actually want to know. Gaps in current content surface immediately. Informs the editorial roadmap and SEO priorities.</li>
+<li><strong>New sponsor / ad inventory</strong> — sponsor cards in the entity panel are a fresh ad surface. Existing <code>/api/track/ad-impression</code> and <code>/api/track/ad-click</code> endpoints already separate chat-driven from organic, so attribution is built in.</li>
+<li><strong>Trip-planning conversion</strong> — bot can recommend resorts and link to current conditions, articles, and events — driving deeper engagement with paid partners and Epic / Ikon / Indy pass affiliations.</li>
+<li><strong>Multi-language path</strong> <em>(v1.5)</em> — English v1; Spanish + French planned. Opens Latin America and Quebec markets with mostly system-prompt work, no model retraining.</li>
+<li><strong>Brand authority</strong> — positions SnoCountry as the trusted, AI-augmented authority on North American skiing. Press-friendly launch story.</li>
+</ul>
+<hr>
+<h2>Discussion on Mon, May 11, 2026</h2>
+<p>To start kickoff on May 18, we need:</p>
+<ul>
+<li><strong>Approval to staff</strong> — 1 dev (full-time, Weeks 1–18), 1  LLM designer (Weeks 1–18) (seasonal/contract), and ¼ PM oversight throughout.</li>
+<li><strong>Budget approval</strong> — ~$1,500 cloud spend + ~$250 legal review.</li>
+<li><strong>Nomination of a content lead</strong> — to author the 50 resort overviews (Weeks 1–10) and review chat tone before launch.</li>
+</ul>
+<p>Past May 18, public launch slides accordingly.</p>
+<hr>
+<p><em>Companion documents (deeper detail):</em></p>
+<ul>
+<li><code>ai-chat-executive-plan.md</code> — 10-minute exec digest with phase tables, sensitivity analysis, and the 13 easy-to-forget items.</li>
+<li><code>deployment-plan.md</code> — full 11-section technical plan.</li>
+<li><code>rag-plan.md</code> — architecture and API specs.</li>
+<li><code>rag-jailbreak-tests.md</code> — adversarial test suite.</li>
+</ul>
+<p><em>Document version: v1 — drafted 2026-05-08</em></p>
+
+
+<div class="footer">
+  Generated from <code>ai-chat-one-page.md</code> via <code>scripts/build-one-page-html.js</code>
+</div>
+
+</main>
+
+</body>
+</html>
