@@ -91,6 +91,39 @@ export const listByPhase = query({
   },
 });
 
+/** Active (todo/in progress/in review) and done counts for each phase. */
+export const countsByPhase = query({
+  args: { token: v.string() },
+  returns: v.array(
+    v.object({
+      phaseId: v.id("phases"),
+      active: v.number(),
+      done: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requireUser(ctx, args.token);
+    const todos = await ctx.db.query("todos").collect();
+    const counts = new Map<Id<"phases">, { active: number; done: number }>();
+
+    for (const todo of todos) {
+      const entry = counts.get(todo.phaseId) ?? { active: 0, done: 0 };
+      if (todo.status === "done") {
+        entry.done += 1;
+      } else {
+        entry.active += 1;
+      }
+      counts.set(todo.phaseId, entry);
+    }
+
+    return Array.from(counts.entries()).map(([phaseId, { active, done }]) => ({
+      phaseId,
+      active,
+      done,
+    }));
+  },
+});
+
 export const get = query({
   args: { token: v.string(), todoId: v.id("todos") },
   returns: v.union(todoCard, v.null()),

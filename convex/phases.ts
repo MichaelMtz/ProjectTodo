@@ -17,7 +17,7 @@ const DEFAULT_PHASES: Array<{ name: string; icon: string; comingSoon?: boolean }
   { name: "Foundation", icon: "🧱" },
   { name: "RAG", icon: "🔎" },
   { name: "Hardening", icon: "🛡️" },
-  { name: "Launch", icon: "🚀", comingSoon: true },
+  { name: "Launch", icon: "🚀" },
 ];
 
 /** List all non-archived phases in display order. */

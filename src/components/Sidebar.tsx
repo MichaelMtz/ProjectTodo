@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useState, useMemo } from "react";
+import { useMutation, useQuery } from "convex/react";
 import {
   DndContext,
   DragOverlay,
@@ -44,6 +44,15 @@ export default function Sidebar({
   const renamePhase = useMutation(api.phases.rename);
   const archivePhase = useMutation(api.phases.archive);
   const reorderPhases = useMutation(api.phases.reorder);
+  const phaseCounts = useQuery(api.todos.countsByPhase, { token });
+
+  const countByPhaseId = useMemo(() => {
+    const map = new Map<Id<"phases">, { active: number; done: number }>();
+    for (const row of phaseCounts ?? []) {
+      map.set(row.phaseId, { active: row.active, done: row.done });
+    }
+    return map;
+  }, [phaseCounts]);
 
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -113,10 +122,14 @@ export default function Sidebar({
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={phases.map((p) => p._id)} strategy={verticalListSortingStrategy}>
-            {phases.map((phase) => (
+            {phases.map((phase) => {
+              const counts = countByPhaseId.get(phase._id) ?? { active: 0, done: 0 };
+              return (
               <SortablePhaseItem
                 key={phase._id}
                 phase={phase}
+                activeCount={counts.active}
+                doneCount={counts.active + counts.done}
                 isActive={selectedId === phase._id}
                 isDragging={draggingId === phase._id}
                 isEditing={editingId === phase._id}
@@ -136,7 +149,8 @@ export default function Sidebar({
                   if (confirm(`Archive "${phase.name}"?`)) archivePhase({ token, phaseId: phase._id });
                 }}
               />
-            ))}
+              );
+            })}
           </SortableContext>
           <DragOverlay>
             {draggingPhase ? (
@@ -222,6 +236,8 @@ const PHASE_ICONS = ["📋", "🧪", "🧱", "🔎", "🛡️", "🚀", "⚙️"
 
 function SortablePhaseItem({
   phase,
+  activeCount,
+  doneCount,
   isActive,
   isDragging,
   isEditing,
@@ -236,6 +252,8 @@ function SortablePhaseItem({
   onArchive,
 }: {
   phase: Phase;
+  activeCount: number;
+  doneCount: number;
   isActive: boolean;
   isDragging: boolean;
   isEditing: boolean;
@@ -286,8 +304,13 @@ function SortablePhaseItem({
 
       <span className="phase-icon">{phase.icon ?? "📋"}</span>
       <span className="phase-name">{phase.name}</span>
+      <span className="phase-count muted" title="Active / total">
+        ({activeCount}/{doneCount})
+      </span>
 
-      {phase.comingSoon && <span className="phase-badge">SOON</span>}
+      {phase.comingSoon && phase.name !== "Public Launch" && (
+        <span className="phase-badge">SOON</span>
+      )}
 
       <button
         className="phase-edit-btn"

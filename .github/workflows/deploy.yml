@@ -1,0 +1,53 @@
+name: Deploy todo-notes-app
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Push Convex functions (self-hosted)
+        env:
+          CONVEX_SELF_HOSTED_URL: ${{ secrets.CONVEX_URL }}
+          CONVEX_SELF_HOSTED_ADMIN_KEY: ${{ secrets.CONVEX_ADMIN_KEY }}
+        run: bunx convex deploy -y
+
+      - name: Build SPA
+        env:
+          VITE_CONVEX_URL: ${{ secrets.CONVEX_URL }}
+        run: bunx vite build
+
+      - name: Copy build to server (staging dir)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "dist/**"
+          target: "/var/www/todo-notes-app/dist-incoming"
+          strip_components: 1
+
+      - name: Swap into place atomically
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            rsync -a --delete /var/www/todo-notes-app/dist-incoming/ /var/www/todo-notes-app/dist/
+            rm -rf /var/www/todo-notes-app/dist-incoming
