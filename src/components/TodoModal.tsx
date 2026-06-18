@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -16,6 +16,7 @@ export default function TodoModal({
 }) {
   const token = useToken();
   const todo = useQuery(api.todos.get, { token, todoId });
+  const allTags = useQuery(api.todos.listAllTags, { token });
   const checklist = useQuery(api.checklist.listByTodo, { token, todoId });
   const comments = useQuery(api.comments.listByTodo, { token, todoId });
   const activity = useQuery(api.activity.listByTodo, { token, todoId });
@@ -56,6 +57,18 @@ export default function TodoModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const availableTags = useMemo(() => {
+    if (!todo) return [];
+    const onTodo = new Set(todo.tags);
+    return (allTags ?? []).filter((tag) => !onTodo.has(tag));
+  }, [allTags, todo?.tags]);
+
+  const matchingTags = useMemo(() => {
+    const query = tagDraft.trim().toLowerCase();
+    if (!query) return availableTags;
+    return availableTags.filter((tag) => tag.toLowerCase().includes(query));
+  }, [availableTags, tagDraft]);
+
   if (todo === undefined) {
     return (
       <div className="modal-overlay" onClick={onClose}>
@@ -75,12 +88,19 @@ export default function TodoModal({
     setSaved(true);
   }
 
-  function addTag() {
-    const t = tagDraft.trim();
+  function addTag(tag: string) {
+    const t = tag.trim();
     if (t && !todo!.tags.includes(t)) {
       void save({ tags: [...todo!.tags, t] });
     }
     setTagDraft("");
+  }
+
+  function addTagFromDraft() {
+    const draft = tagDraft.trim();
+    if (!draft) return;
+    const existing = (allTags ?? []).find((tag) => tag.toLowerCase() === draft.toLowerCase());
+    addTag(existing ?? draft);
   }
 
   async function handleFileUpload(file: File) {
@@ -359,23 +379,48 @@ export default function TodoModal({
           </PropRow>
 
           <PropRow label="Tags">
-            <div className="tag-editor">
-              {todo.tags.map((t) => (
-                <span key={t} className="chip tag-chip">
-                  {t}
-                  <button onClick={() => save({ tags: todo.tags.filter((x) => x !== t) })}>
-                    ✕
-                  </button>
-                </span>
-              ))}
-              <input
-                className="tag-input"
-                value={tagDraft}
-                placeholder="Add tag…"
-                onChange={(e) => setTagDraft(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addTag()}
-                onBlur={addTag}
-              />
+            <div className="tag-field">
+              <div className="tag-editor">
+                {todo.tags.map((t) => (
+                  <span key={t} className="chip tag-chip">
+                    {t}
+                    <button onClick={() => save({ tags: todo.tags.filter((x) => x !== t) })}>
+                      ✕
+                    </button>
+                  </span>
+                ))}
+                <input
+                  className="tag-input"
+                  value={tagDraft}
+                  placeholder="Add tag…"
+                  onChange={(e) => setTagDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addTagFromDraft();
+                    }
+                  }}
+                />
+              </div>
+              {matchingTags.length > 0 ? (
+                <div className="tag-suggestions">
+                  {matchingTags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      className="chip tag-suggestion"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => addTag(tag)}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              ) : tagDraft.trim() ? (
+                <div className="tag-suggestions-hint muted">
+                  Press Enter to create &ldquo;{tagDraft.trim()}&rdquo;
+                </div>
+              ) : null}
             </div>
           </PropRow>
 

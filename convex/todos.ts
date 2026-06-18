@@ -124,6 +124,23 @@ export const countsByPhase = query({
   },
 });
 
+/** Distinct tags used across all todos, sorted alphabetically. */
+export const listAllTags = query({
+  args: { token: v.string() },
+  returns: v.array(v.string()),
+  handler: async (ctx, args) => {
+    await requireUser(ctx, args.token);
+    const todos = await ctx.db.query("todos").collect();
+    const tags = new Set<string>();
+    for (const todo of todos) {
+      for (const tag of todo.tags) {
+        tags.add(tag);
+      }
+    }
+    return [...tags].sort((a, b) => a.localeCompare(b));
+  },
+});
+
 export const get = query({
   args: { token: v.string(), todoId: v.id("todos") },
   returns: v.union(todoCard, v.null()),
