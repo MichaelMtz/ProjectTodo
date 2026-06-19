@@ -4,11 +4,11 @@ import { Doc, Id } from "./_generated/dataModel";
 import { statusValidator, priorityValidator, typeValidator } from "./schema";
 import { requireUser } from "./auth";
 
-async function markLinkedChecklistDone(ctx: MutationCtx, todoId: Id<"todos">) {
+async function syncLinkedChecklist(ctx: MutationCtx, todoId: Id<"todos">, done: boolean) {
   const allItems = await ctx.db.query("checklistItems").collect();
   for (const item of allItems) {
-    if (item.linkedTodoId === todoId && !item.done) {
-      await ctx.db.patch(item._id, { done: true });
+    if (item.linkedTodoId === todoId && item.done !== done) {
+      await ctx.db.patch(item._id, { done });
     }
   }
 }
@@ -244,9 +244,7 @@ export const update = mutation({
         userId,
         `moved this to ${STATUS_LABELS[args.status]}`,
       );
-      if (args.status === "done") {
-        await markLinkedChecklistDone(ctx, args.todoId);
-      }
+      await syncLinkedChecklist(ctx, args.todoId, args.status === "done");
     }
     if (args.priority !== undefined && args.priority !== todo.priority) {
       await logActivity(
@@ -286,9 +284,7 @@ export const setColumn = mutation({
         userId,
         `moved this to ${STATUS_LABELS[args.status]}`,
       );
-      if (args.status === "done") {
-        await markLinkedChecklistDone(ctx, args.todoId);
-      }
+      await syncLinkedChecklist(ctx, args.todoId, args.status === "done");
     }
     let order = 0;
     for (const id of args.orderedIds) {
