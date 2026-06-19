@@ -8,13 +8,20 @@ import { relativeTime, dateInputValue, parseDateInput, initials } from "../lib/f
 import "../styles/modal.css";
 
 export default function TodoModal({
-  todoId,
+  todoId: initialTodoId,
   onClose,
 }: {
   todoId: Id<"todos">;
   onClose: () => void;
 }) {
   const token = useToken();
+  const [todoId, setTodoId] = useState(initialTodoId);
+  const [navHistory, setNavHistory] = useState<Id<"todos">[]>([]);
+  const [phase, setPhase] = useState<"enter" | "visible" | "exit" | "swap">("enter");
+  const [pendingNavId, setPendingNavId] = useState<Id<"todos"> | null>(null);
+  const [navDirection, setNavDirection] = useState<"forward" | "back">("forward");
+  const overlayRef = useRef<HTMLDivElement>(null);
+
   const todo = useQuery(api.todos.get, { token, todoId });
   const allTags = useQuery(api.todos.listAllTags, { token });
   const checklist = useQuery(api.checklist.listByTodo, { token, todoId });
@@ -31,6 +38,8 @@ export default function TodoModal({
   const addItem = useMutation(api.checklist.add);
   const toggleItem = useMutation(api.checklist.toggle);
   const removeItem = useMutation(api.checklist.remove);
+  const linkChecklistTodo = useMutation(api.checklist.linkTodo);
+  const createTodo = useMutation(api.todos.create);
   const addComment = useMutation(api.comments.add);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,6 +51,11 @@ export default function TodoModal({
   const [saved, setSaved] = useState(true);
   const [uploading, setUploading] = useState(false);
 
+  // Trigger enter animation on mount.
+  useEffect(() => {
+    requestAnimationFrame(() => setPhase("visible"));
+  }, []);
+
   // Hydrate local editable fields once the todo loads.
   useEffect(() => {
     if (todo) {
@@ -50,12 +64,50 @@ export default function TodoModal({
     }
   }, [todo?._id]);
 
-  // Close on Escape.
+  // Close on Escape with exit animation.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleClose();
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  function handleClose() {
+    setPhase("exit");
+    setTimeout(onClose, 220);
+  }
+
+  function navigateToTodo(targetId: Id<"todos">) {
+    setNavDirection("forward");
+    setPendingNavId(targetId);
+    setPhase("swap");
+  }
+
+  function navigateBack() {
+    if (navHistory.length === 0) return;
+    setNavDirection("back");
+    setPendingNavId(navHistory[navHistory.length - 1]);
+    setPhase("swap");
+  }
+
+  function handleTransitionEnd() {
+    if (phase === "swap" && pendingNavId) {
+      if (navDirection === "forward") {
+        setNavHistory((prev) => [...prev, todoId]);
+      } else {
+        setNavHistory((prev) => prev.slice(0, -1));
+      }
+      setTodoId(pendingNavId);
+      setPendingNavId(null);
+      setTitle("");
+      setDescription("");
+      setNewItem("");
+      setTagDraft("");
+      setComment("");
+      requestAnimationFrame(() => setPhase("visible"));
+    }
+  }
 
   const availableTags = useMemo(() => {
     if (!todo) return [];
@@ -69,9 +121,11 @@ export default function TodoModal({
     return availableTags.filter((tag) => tag.toLowerCase().includes(query));
   }, [availableTags, tagDraft]);
 
+  const overlayClass = `modal-overlay ${phase === "enter" ? "modal-enter" : phase === "exit" || phase === "swap" ? "modal-exit" : "modal-visible"}`;
+
   if (todo === undefined) {
     return (
-      <div className="modal-overlay" onClick={onClose}>
+      <div className={overlayClass} onClick={handleClose}>
         <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-loading">Loading…</div>
         </div>
@@ -130,15 +184,28 @@ export default function TodoModal({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div
+      ref={overlayRef}
+      className={overlayClass}
+      onClick={handleClose}
+      onTransitionEnd={handleTransitionEnd}
+    >
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         {/* Left: content */}
         <div className="modal-main">
           <div className="modal-main-head">
+            {navHistory.length > 0 && (
+              <button className="modal-back" title="Back to previous card" onClick={navigateBack}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
+              </button>
+            )}
             <span className="modal-id muted">
               {TYPES.find((t) => t.key === todo.type)?.icon} {todo._id.slice(-6).toUpperCase()}
             </span>
-            <button className="icon-btn modal-close" onClick={onClose}>
+            <button className="icon-btn modal-close" onClick={handleClose}>
               ✕
             </button>
           </div>
@@ -238,6 +305,41 @@ export default function TodoModal({
                 <button className="checklist-del" onClick={() => removeItem({ token, itemId: item._id })}>
                   ✕
                 </button>
+                {item.linkedTodoId ? (
+                  <button
+                    className="checklist-linked-btn"
+                    title="Open linked todo"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateToTodo(item.linkedTodoId!);
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                    </svg>
+                  </button>
+                ) : todo && (
+                  <button
+                    className="checklist-create-todo"
+                    title="Create todo from subtask"
+                    onClick={async () => {
+                      const newTodoId = await createTodo({
+                        token,
+                        phaseId: todo.phaseId,
+                        title: item.text,
+                      });
+                      await linkChecklistTodo({ token, itemId: item._id, linkedTodoId: newTodoId });
+                      navigateToTodo(newTodoId);
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <line x1="12" y1="8" x2="12" y2="16" />
+                      <line x1="8" y1="12" x2="16" y2="12" />
+                    </svg>
+                  </button>
+                )}
               </div>
             ))}
             <input
@@ -430,7 +532,7 @@ export default function TodoModal({
               onClick={() => {
                 if (confirm("Delete this card?")) {
                   void removeTodo({ token, todoId });
-                  onClose();
+                  handleClose();
                 }
               }}
             >

@@ -84,6 +84,7 @@ export default defineSchema({
     text: v.string(),
     done: v.boolean(),
     order: v.number(),
+    linkedTodoId: v.optional(v.id("todos")),
   }).index("by_todo", ["todoId"]),
 
   comments: defineTable({

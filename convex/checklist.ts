@@ -9,6 +9,7 @@ const checklistItem = v.object({
   text: v.string(),
   done: v.boolean(),
   order: v.number(),
+  linkedTodoId: v.optional(v.id("todos")),
 });
 
 export const listByTodo = query({
@@ -62,6 +63,20 @@ export const updateText = mutation({
   handler: async (ctx, args) => {
     await requireUser(ctx, args.token);
     await ctx.db.patch(args.itemId, { text: args.text });
+    return null;
+  },
+});
+
+export const linkTodo = mutation({
+  args: {
+    token: v.string(),
+    itemId: v.id("checklistItems"),
+    linkedTodoId: v.id("todos"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireUser(ctx, args.token);
+    await ctx.db.patch(args.itemId, { linkedTodoId: args.linkedTodoId });
     return null;
   },
 });

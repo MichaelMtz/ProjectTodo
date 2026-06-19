@@ -42,19 +42,23 @@ CONVEX_AGENT_MODE=anonymous bunx convex dev
 ```
 The first run:
 - downloads the Convex local backend + dashboard,
-- starts the backend at `http://127.0.0.1:3210`,
+- starts the backend (port auto-assigned from the deployment name in `.env.local`),
 - writes `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL` to `.env.local`,
 - pushes the schema and functions, and keeps watching for changes.
 
-Leave this running in its own terminal. The local dashboard is printed in the
-output (e.g. `http://127.0.0.1:6790`).
+This project uses `CONVEX_DEPLOYMENT=anonymous:todo-notes` to avoid port
+conflicts with other Convex projects (e.g. sno-cms on `:3210`). The actual
+port is written to `VITE_CONVEX_URL` in `.env.local` (typically `:3212`).
+
+Leave this running in its own terminal. The local dashboard URL is printed in
+the output.
 
 > **No auth keys to set up.** Auth is home-brewed (see below), so there are no
 > JWT keys or env vars to provision — just run the backend and the web app.
 
 ### 3. Start the web app
 ```bash
-bun run dev:web      # vite on http://localhost:5173
+bun run dev:web      # vite on http://localhost:5273
 ```
 
 Or run **both** backend + frontend together:
@@ -63,7 +67,7 @@ CONVEX_AGENT_MODE=anonymous bun run dev
 ```
 
 ### 4. Open the app
-Visit **http://localhost:5173**, click **Create an account**, sign up, and the
+Visit **http://localhost:5273**, click **Create an account**, sign up, and the
 default phases (POC, Foundation, RAG, Hardening, Launch) are seeded
 automatically.
 

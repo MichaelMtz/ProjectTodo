@@ -4,6 +4,15 @@ import { Doc, Id } from "./_generated/dataModel";
 import { statusValidator, priorityValidator, typeValidator } from "./schema";
 import { requireUser } from "./auth";
 
+async function markLinkedChecklistDone(ctx: MutationCtx, todoId: Id<"todos">) {
+  const allItems = await ctx.db.query("checklistItems").collect();
+  for (const item of allItems) {
+    if (item.linkedTodoId === todoId && !item.done) {
+      await ctx.db.patch(item._id, { done: true });
+    }
+  }
+}
+
 async function logActivity(
   ctx: MutationCtx,
   todoId: Id<"todos">,
@@ -235,6 +244,9 @@ export const update = mutation({
         userId,
         `moved this to ${STATUS_LABELS[args.status]}`,
       );
+      if (args.status === "done") {
+        await markLinkedChecklistDone(ctx, args.todoId);
+      }
     }
     if (args.priority !== undefined && args.priority !== todo.priority) {
       await logActivity(
@@ -274,6 +286,9 @@ export const setColumn = mutation({
         userId,
         `moved this to ${STATUS_LABELS[args.status]}`,
       );
+      if (args.status === "done") {
+        await markLinkedChecklistDone(ctx, args.todoId);
+      }
     }
     let order = 0;
     for (const id of args.orderedIds) {

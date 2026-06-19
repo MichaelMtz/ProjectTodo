@@ -1,14 +1,27 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(40, 40, 38, 0.32);
-  backdrop-filter: blur(2px);
+  background: rgba(40, 40, 38, 0);
+  backdrop-filter: blur(0px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
   z-index: 50;
   padding: 28px;
   overflow-y: auto;
+  transition: background 0.22s ease, backdrop-filter 0.22s ease;
+}
+.modal-overlay.modal-enter {
+  background: rgba(40, 40, 38, 0);
+  backdrop-filter: blur(0px);
+}
+.modal-overlay.modal-visible {
+  background: rgba(40, 40, 38, 0.32);
+  backdrop-filter: blur(2px);
+}
+.modal-overlay.modal-exit {
+  background: rgba(40, 40, 38, 0);
+  backdrop-filter: blur(0px);
 }
 
 .modal {
@@ -21,6 +34,17 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-drag);
   overflow: hidden;
+  opacity: 0;
+  transform: translateY(16px) scale(0.97);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.modal-visible .modal {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.modal-exit .modal {
+  opacity: 0;
+  transform: translateY(-12px) scale(0.97);
 }
 .modal-loading {
   padding: 40px;
@@ -40,7 +64,27 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
   margin-bottom: 6px;
+}
+.modal-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-app);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.13s, border-color 0.13s, color 0.13s;
+}
+.modal-back:hover {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--accent-ink);
 }
 .modal-id {
   font-size: 12px;
@@ -216,6 +260,50 @@
 }
 .checklist-row:hover .checklist-del {
   opacity: 1;
+}
+.checklist-create-todo {
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.13s, background 0.13s, color 0.13s;
+}
+.checklist-row:hover .checklist-create-todo {
+  opacity: 1;
+}
+.checklist-create-todo:hover {
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+}
+.checklist-linked-btn {
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--accent-ink);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.13s, background 0.13s, color 0.13s;
+}
+.checklist-row:hover .checklist-linked-btn {
+  opacity: 1;
+}
+.checklist-linked-btn:hover {
+  background: var(--accent-wash);
+  color: var(--accent);
 }
 .checklist-add {
   border: none;
