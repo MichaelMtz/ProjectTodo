@@ -21,7 +21,6 @@ export const typeValidator = v.union(
   v.literal("bug"),
   v.literal("feature"),
   v.literal("core"),
-  v.literal("chore"), // legacy — run migrations:migrateChoreToCore, then remove
 );
 
 export const roleValidator = v.union(

@@ -4,13 +4,15 @@ import { v } from "convex/values";
 /**
  * One-time: rename todo type "chore" → "core".
  *
- * Run after deploy:
+ * Local dev (uses .env.local from `convex dev`):
  *   bunx convex run migrations:migrateChoreToCore
  *
- * Self-hosted production:
- *   CONVEX_SELF_HOSTED_URL=... CONVEX_SELF_HOSTED_ADMIN_KEY=... \
+ * Self-hosted production (same secrets as GitHub Actions deploy — NOT CONVEX_DEPLOYMENT):
+ *   CONVEX_SELF_HOSTED_URL='https://your-convex-backend' \
+ *   CONVEX_SELF_HOSTED_ADMIN_KEY='your-admin-key' \
  *     bunx convex run migrations:migrateChoreToCore
  *
+ * Run from your laptop in the repo root, or on the VPS with the repo checked out.
  * Safe to re-run (no-op once nothing is left on "chore").
  * After updated > 0 (or confirmed 0 remain), remove v.literal("chore") from schema.ts.
  */
