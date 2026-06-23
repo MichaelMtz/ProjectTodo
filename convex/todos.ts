@@ -133,6 +133,31 @@ export const countsByPhase = query({
   },
 });
 
+/** Lightweight todo list for linking checklist items to existing cards. */
+export const listForLink = query({
+  args: { token: v.string(), excludeTodoId: v.optional(v.id("todos")) },
+  returns: v.array(
+    v.object({
+      _id: v.id("todos"),
+      title: v.string(),
+      phaseId: v.id("phases"),
+      status: statusValidator,
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requireUser(ctx, args.token);
+    const todos = await ctx.db.query("todos").collect();
+    return todos
+      .filter((t) => t._id !== args.excludeTodoId)
+      .map((t) => ({
+        _id: t._id,
+        title: t.title,
+        phaseId: t.phaseId,
+        status: t.status,
+      }));
+  },
+});
+
 /** Distinct tags used across all todos, sorted alphabetically. */
 export const listAllTags = query({
   args: { token: v.string() },

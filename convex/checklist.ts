@@ -76,7 +76,11 @@ export const linkTodo = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await requireUser(ctx, args.token);
-    await ctx.db.patch(args.itemId, { linkedTodoId: args.linkedTodoId });
+    const linked = await ctx.db.get(args.linkedTodoId);
+    await ctx.db.patch(args.itemId, {
+      linkedTodoId: args.linkedTodoId,
+      done: linked?.status === "done",
+    });
     return null;
   },
 });

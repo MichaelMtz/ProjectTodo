@@ -24,6 +24,7 @@ export default function TodoModal({
 
   const todo = useQuery(api.todos.get, { token, todoId });
   const phases = useQuery(api.phases.list, { token });
+  const linkCandidates = useQuery(api.todos.listForLink, { token, excludeTodoId: todoId });
   const allTags = useQuery(api.todos.listAllTags, { token });
   const checklist = useQuery(api.checklist.listByTodo, { token, todoId });
   const comments = useQuery(api.comments.listByTodo, { token, todoId });
@@ -51,6 +52,10 @@ export default function TodoModal({
   const [comment, setComment] = useState("");
   const [saved, setSaved] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [linkPicker, setLinkPicker] = useState<{
+    itemId: Id<"checklistItems">;
+    itemText: string;
+  } | null>(null);
 
   // Trigger enter animation on mount.
   useEffect(() => {
@@ -68,11 +73,16 @@ export default function TodoModal({
   // Close on Escape with exit animation.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") handleClose();
+      if (e.key !== "Escape") return;
+      if (linkPicker) {
+        setLinkPicker(null);
+        return;
+      }
+      handleClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, linkPicker]);
 
   function handleClose() {
     setPhase("exit");
@@ -121,6 +131,19 @@ export default function TodoModal({
     if (!query) return availableTags;
     return availableTags.filter((tag) => tag.toLowerCase().includes(query));
   }, [availableTags, tagDraft]);
+
+  const phaseNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of phases ?? []) map.set(p._id, p.name);
+    return map;
+  }, [phases]);
+
+  const sortedLinkCandidates = useMemo(() => {
+    if (!linkPicker || !linkCandidates) return [];
+    return [...linkCandidates]
+      .map((t) => ({ ...t, score: titleMatchScore(linkPicker.itemText, t.title) }))
+      .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
+  }, [linkCandidates, linkPicker]);
 
   const overlayClass = `modal-overlay ${phase === "enter" ? "modal-enter" : phase === "exit" || phase === "swap" ? "modal-exit" : "modal-visible"}`;
 
@@ -321,25 +344,40 @@ export default function TodoModal({
                     </svg>
                   </button>
                 ) : todo && (
-                  <button
-                    className="checklist-create-todo"
-                    title="Create todo from subtask"
-                    onClick={async () => {
-                      const newTodoId = await createTodo({
-                        token,
-                        phaseId: todo.phaseId,
-                        title: item.text,
-                      });
-                      await linkChecklistTodo({ token, itemId: item._id, linkedTodoId: newTodoId });
-                      navigateToTodo(newTodoId);
-                    }}
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                      <line x1="12" y1="8" x2="12" y2="16" />
-                      <line x1="8" y1="12" x2="16" y2="12" />
-                    </svg>
-                  </button>
+                  <div className="checklist-row-actions">
+                    <button
+                      className="checklist-link-existing"
+                      title="Link to existing todo"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLinkPicker({ itemId: item._id, itemText: item.text });
+                      }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                      </svg>
+                    </button>
+                    <button
+                      className="checklist-create-todo"
+                      title="Create todo from subtask"
+                      onClick={async () => {
+                        const newTodoId = await createTodo({
+                          token,
+                          phaseId: todo.phaseId,
+                          title: item.text,
+                        });
+                        await linkChecklistTodo({ token, itemId: item._id, linkedTodoId: newTodoId });
+                        navigateToTodo(newTodoId);
+                      }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <line x1="12" y1="8" x2="12" y2="16" />
+                        <line x1="8" y1="12" x2="16" y2="12" />
+                      </svg>
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
@@ -561,6 +599,50 @@ export default function TodoModal({
           </div>
         </aside>
       </div>
+
+      {linkPicker && (
+        <div className="checklist-link-picker-overlay" onClick={() => setLinkPicker(null)}>
+          <div className="checklist-link-picker" onClick={(e) => e.stopPropagation()}>
+            <div className="checklist-link-picker-head">
+              <div>
+                <div className="checklist-link-picker-title">Link to existing todo</div>
+                <div className="checklist-link-picker-sub muted">
+                  Best matches for &ldquo;{linkPicker.itemText}&rdquo;
+                </div>
+              </div>
+              <button className="icon-btn" type="button" onClick={() => setLinkPicker(null)} aria-label="Close">
+                ✕
+              </button>
+            </div>
+            <div className="checklist-link-picker-list">
+              {sortedLinkCandidates.length === 0 ? (
+                <div className="checklist-link-picker-empty muted">No todos available to link.</div>
+              ) : (
+                sortedLinkCandidates.map((candidate) => (
+                  <button
+                    key={candidate._id}
+                    type="button"
+                    className="chip checklist-link-pill"
+                    onClick={() => {
+                      void linkChecklistTodo({
+                        token,
+                        itemId: linkPicker.itemId,
+                        linkedTodoId: candidate._id,
+                      });
+                      setLinkPicker(null);
+                    }}
+                  >
+                    <span className="checklist-link-pill-title">{candidate.title}</span>
+                    <span className="checklist-link-pill-meta">
+                      {phaseNameById.get(candidate.phaseId) ?? "Phase"}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -569,6 +651,23 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function titleMatchScore(query: string, title: string): number {
+  const a = query.trim().toLowerCase();
+  const b = title.trim().toLowerCase();
+  if (!a || !b) return 0;
+  if (a === b) return 100;
+  if (b.includes(a)) return 80;
+  if (a.includes(b)) return 70;
+  const aWords = a.split(/\s+/).filter((w) => w.length > 1);
+  const bWords = b.split(/\s+/);
+  let score = 0;
+  for (const w of aWords) {
+    if (bWords.some((bw) => bw === w)) score += 15;
+    else if (b.includes(w)) score += 8;
+  }
+  return score;
 }
 
 function PropRow({ label, children }: { label: string; children: React.ReactNode }) {
