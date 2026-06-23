@@ -217,6 +217,7 @@ export const update = mutation({
     category: v.optional(v.string()),
     startDate: v.optional(v.union(v.number(), v.null())),
     dueDate: v.optional(v.union(v.number(), v.null())),
+    phaseId: v.optional(v.id("phases")),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -234,8 +235,19 @@ export const update = mutation({
     if (args.startDate !== undefined) patch.startDate = args.startDate ?? undefined;
     if (args.dueDate !== undefined) patch.dueDate = args.dueDate ?? undefined;
     if (args.status !== undefined) patch.status = args.status;
+    if (args.phaseId !== undefined) patch.phaseId = args.phaseId;
 
     await ctx.db.patch(args.todoId, patch);
+
+    if (args.phaseId !== undefined && args.phaseId !== todo.phaseId) {
+      const phase = await ctx.db.get(args.phaseId);
+      await logActivity(
+        ctx,
+        args.todoId,
+        userId,
+        `moved this to phase "${phase?.name ?? "Unknown"}"`,
+      );
+    }
 
     if (args.status !== undefined && args.status !== todo.status) {
       await logActivity(

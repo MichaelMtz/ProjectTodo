@@ -23,6 +23,7 @@ export default function TodoModal({
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const todo = useQuery(api.todos.get, { token, todoId });
+  const phases = useQuery(api.phases.list, { token });
   const allTags = useQuery(api.todos.listAllTags, { token });
   const checklist = useQuery(api.checklist.listByTodo, { token, todoId });
   const comments = useQuery(api.comments.listByTodo, { token, todoId });
@@ -527,6 +528,25 @@ export default function TodoModal({
           </PropRow>
 
           <div className="modal-side-foot">
+            <div className="move-phase">
+              <label className="move-phase-label">Move to another phase</label>
+              <select
+                className="prop-select move-phase-select"
+                value={todo.phaseId}
+                onChange={(e) => {
+                  const targetId = e.target.value as Id<"phases">;
+                  if (targetId !== todo.phaseId) {
+                    void save({ phaseId: targetId });
+                  }
+                }}
+              >
+                {phases?.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.icon ?? "📋"} {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button
               className="btn btn--danger"
               onClick={() => {
