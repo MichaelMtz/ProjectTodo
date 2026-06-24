@@ -330,7 +330,7 @@ export default function TodoModal({
               ref={fileInputRef}
               type="file"
               className="attachment-file-input"
-              accept="image/*,.html,.htm,.pdf,.doc,.docx,.txt,.md,.csv,.json,.xml"
+              accept="image/*,.html,.htm,.pdf,.doc,.docx,.txt,.md,.csv,.json,.jsonl,.xml,.js,.ts,.tsx,.py"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) void handleFileUpload(file);
