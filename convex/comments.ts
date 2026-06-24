@@ -45,3 +45,19 @@ export const add = mutation({
     return null;
   },
 });
+
+export const remove = mutation({
+  args: { token: v.string(), commentId: v.id("comments") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await requireUser(ctx, args.token);
+    const comment = await ctx.db.get(args.commentId);
+    if (!comment) return null;
+    const user = await ctx.db.get(userId);
+    if (comment.authorId !== userId && user?.role !== "developer") {
+      throw new Error("Not allowed to delete this comment");
+    }
+    await ctx.db.delete(args.commentId);
+    return null;
+  },
+});

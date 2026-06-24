@@ -471,6 +471,10 @@
   display: flex;
   gap: 9px;
 }
+.comment-content {
+  flex: 1;
+  min-width: 0;
+}
 .comment-avatar {
   display: inline-flex;
   align-items: center;
@@ -493,6 +497,19 @@
 }
 .comment-head .muted {
   font-size: 11.5px;
+}
+.comment-del {
+  margin-left: auto;
+  opacity: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.comment:hover .comment-del {
+  opacity: 1;
 }
 .comment-body {
   font-size: 13.5px;

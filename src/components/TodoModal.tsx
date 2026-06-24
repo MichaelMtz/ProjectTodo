@@ -19,7 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
-import { useToken } from "../auth";
+import { useAuth, useToken } from "../auth";
 import { COLUMNS, PRIORITIES, TYPES, Status, Priority, TodoType } from "../lib/constants";
 import { relativeTime, dateInputValue, parseDateInput, initials } from "../lib/format";
 import "../styles/modal.css";
@@ -32,6 +32,7 @@ export default function TodoModal({
   onClose: () => void;
 }) {
   const token = useToken();
+  const { user } = useAuth();
   const [todoId, setTodoId] = useState(initialTodoId);
   const [navHistory, setNavHistory] = useState<Id<"todos">[]>([]);
   const [phase, setPhase] = useState<"enter" | "visible" | "exit" | "swap">("enter");
@@ -61,6 +62,7 @@ export default function TodoModal({
   const linkChecklistTodo = useMutation(api.checklist.linkTodo);
   const createTodo = useMutation(api.todos.create);
   const addComment = useMutation(api.comments.add);
+  const removeComment = useMutation(api.comments.remove);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
@@ -417,18 +419,35 @@ export default function TodoModal({
             />
           </div>
           <div className="comment-list">
-            {comments?.map((c) => (
+            {comments?.map((c) => {
+              const canDelete =
+                user && (user._id === c.authorId || user.role === "developer");
+              return (
               <div key={c._id} className="comment">
                 <span className="comment-avatar">{initials(c.authorName)}</span>
-                <div>
+                <div className="comment-content">
                   <div className="comment-head">
                     <strong>{c.authorName}</strong>
                     <span className="muted">{relativeTime(c._creationTime)}</span>
+                    {canDelete && (
+                      <button
+                        className="comment-del"
+                        title="Delete comment"
+                        onClick={() => {
+                          if (confirm("Delete this comment?")) {
+                            void removeComment({ token, commentId: c._id });
+                          }
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                   <div className="comment-body">{c.body}</div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <label className="modal-section-label">Activity</label>
