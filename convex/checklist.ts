@@ -94,3 +94,25 @@ export const remove = mutation({
     return null;
   },
 });
+
+/** Persist a new ordering of checklist items within a todo. */
+export const reorder = mutation({
+  args: {
+    token: v.string(),
+    todoId: v.id("todos"),
+    orderedIds: v.array(v.id("checklistItems")),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireUser(ctx, args.token);
+    let order = 0;
+    for (const id of args.orderedIds) {
+      const item = await ctx.db.get(id);
+      if (!item || item.todoId !== args.todoId) {
+        throw new Error("Invalid checklist item");
+      }
+      await ctx.db.patch(id, { order: order++ });
+    }
+    return null;
+  },
+});

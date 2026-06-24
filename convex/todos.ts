@@ -13,6 +13,15 @@ async function syncLinkedChecklist(ctx: MutationCtx, todoId: Id<"todos">, done: 
   }
 }
 
+async function clearLinkedChecklistAssociations(ctx: MutationCtx, todoId: Id<"todos">) {
+  const allItems = await ctx.db.query("checklistItems").collect();
+  for (const item of allItems) {
+    if (item.linkedTodoId === todoId) {
+      await ctx.db.patch(item._id, { linkedTodoId: undefined });
+    }
+  }
+}
+
 async function logActivity(
   ctx: MutationCtx,
   todoId: Id<"todos">,
@@ -353,6 +362,7 @@ export const remove = mutation({
       await ctx.storage.delete(a.storageId);
       await ctx.db.delete(a._id);
     }
+    await clearLinkedChecklistAssociations(ctx, args.todoId);
     await ctx.db.delete(args.todoId);
     return null;
   },

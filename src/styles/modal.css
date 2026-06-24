@@ -239,6 +239,32 @@
   padding: 5px 6px;
   border-radius: 6px;
 }
+.checklist-row.is-dragging {
+  opacity: 0.5;
+}
+.checklist-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 22px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  opacity: 0;
+  cursor: grab;
+  touch-action: none;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+}
+.checklist-row:hover .checklist-drag-handle {
+  opacity: 0.55;
+}
+.checklist-drag-handle:active {
+  cursor: grabbing;
+}
 .checklist-row:hover {
   background: var(--bg-sunken);
 }

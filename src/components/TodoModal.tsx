@@ -1,7 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { Doc, Id } from "../../convex/_generated/dataModel";
 import { useToken } from "../auth";
 import { COLUMNS, PRIORITIES, TYPES, Status, Priority, TodoType } from "../lib/constants";
 import { relativeTime, dateInputValue, parseDateInput, initials } from "../lib/format";
@@ -40,6 +57,7 @@ export default function TodoModal({
   const addItem = useMutation(api.checklist.add);
   const toggleItem = useMutation(api.checklist.toggle);
   const removeItem = useMutation(api.checklist.remove);
+  const reorderChecklist = useMutation(api.checklist.reorder);
   const linkChecklistTodo = useMutation(api.checklist.linkTodo);
   const createTodo = useMutation(api.todos.create);
   const addComment = useMutation(api.comments.add);
@@ -56,6 +74,12 @@ export default function TodoModal({
     itemId: Id<"checklistItems">;
     itemText: string;
   } | null>(null);
+  const [draggingChecklistId, setDraggingChecklistId] = useState<Id<"checklistItems"> | null>(null);
+
+  const checklistSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
 
   // Trigger enter animation on mount.
   useEffect(() => {
@@ -164,6 +188,21 @@ export default function TodoModal({
     setSaved(false);
     await update({ token, todoId, ...patch });
     setSaved(true);
+  }
+
+  function handleChecklistDragStart(e: DragStartEvent) {
+    setDraggingChecklistId(e.active.id as Id<"checklistItems">);
+  }
+
+  function handleChecklistDragEnd(e: DragEndEvent) {
+    setDraggingChecklistId(null);
+    const { active, over } = e;
+    if (!checklist || !over || active.id === over.id) return;
+    const oldIndex = checklist.findIndex((item) => item._id === active.id);
+    const newIndex = checklist.findIndex((item) => item._id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(checklist, oldIndex, newIndex);
+    void reorderChecklist({ token, todoId, orderedIds: reordered.map((item) => item._id) });
   }
 
   function addTag(tag: string) {
@@ -315,85 +354,52 @@ export default function TodoModal({
               </span>
             )}
           </label>
-          <div className="checklist">
-            {checklist?.map((item) => (
-              <div key={item._id} className="checklist-row">
-                <input
-                  type="checkbox"
-                  checked={item.done}
-                  onChange={() => toggleItem({ token, itemId: item._id })}
-                />
-                <span className={item.done ? "checklist-text is-done" : "checklist-text"}>
-                  {item.text}
-                </span>
-                <button className="checklist-del" onClick={() => removeItem({ token, itemId: item._id })}>
-                  ✕
-                </button>
-                {item.linkedTodoId ? (
-                  <button
-                    className="checklist-linked-btn"
-                    title="Open linked todo"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigateToTodo(item.linkedTodoId!);
+          <DndContext
+            sensors={checklistSensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleChecklistDragStart}
+            onDragEnd={handleChecklistDragEnd}
+          >
+            <SortableContext
+              items={checklist?.map((item) => item._id) ?? []}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="checklist">
+                {checklist?.map((item) => (
+                  <ChecklistRow
+                    key={item._id}
+                    item={item}
+                    isDragging={draggingChecklistId === item._id}
+                    onToggle={() => toggleItem({ token, itemId: item._id })}
+                    onRemove={() => removeItem({ token, itemId: item._id })}
+                    onNavigate={() => navigateToTodo(item.linkedTodoId!)}
+                    onLinkPicker={() => setLinkPicker({ itemId: item._id, itemText: item.text })}
+                    onCreateAndLink={async () => {
+                      const newTodoId = await createTodo({
+                        token,
+                        phaseId: todo.phaseId,
+                        title: item.text,
+                      });
+                      await linkChecklistTodo({ token, itemId: item._id, linkedTodoId: newTodoId });
+                      navigateToTodo(newTodoId);
                     }}
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                    </svg>
-                  </button>
-                ) : todo && (
-                  <div className="checklist-row-actions">
-                    <button
-                      className="checklist-link-existing"
-                      title="Link to existing todo"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setLinkPicker({ itemId: item._id, itemText: item.text });
-                      }}
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                      </svg>
-                    </button>
-                    <button
-                      className="checklist-create-todo"
-                      title="Create todo from subtask"
-                      onClick={async () => {
-                        const newTodoId = await createTodo({
-                          token,
-                          phaseId: todo.phaseId,
-                          title: item.text,
-                        });
-                        await linkChecklistTodo({ token, itemId: item._id, linkedTodoId: newTodoId });
-                        navigateToTodo(newTodoId);
-                      }}
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <line x1="12" y1="8" x2="12" y2="16" />
-                        <line x1="8" y1="12" x2="16" y2="12" />
-                      </svg>
-                    </button>
-                  </div>
-                )}
+                  />
+                ))}
+                <input
+                  className="checklist-add"
+                  value={newItem}
+                  placeholder="+ Add a subtask"
+                  onChange={(e) => setNewItem(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newItem.trim()) {
+                      void addItem({ token, todoId, text: newItem });
+                      setNewItem("");
+                    }
+                  }}
+                />
               </div>
-            ))}
-            <input
-              className="checklist-add"
-              value={newItem}
-              placeholder="+ Add a subtask"
-              onChange={(e) => setNewItem(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && newItem.trim()) {
-                  void addItem({ token, todoId, text: newItem });
-                  setNewItem("");
-                }
-              }}
-            />
-          </div>
+            </SortableContext>
+          </DndContext>
 
           <label className="modal-section-label">Comments</label>
           <div className="comment-add">
@@ -641,6 +647,98 @@ export default function TodoModal({
               )}
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChecklistRow({
+  item,
+  isDragging,
+  onToggle,
+  onRemove,
+  onNavigate,
+  onLinkPicker,
+  onCreateAndLink,
+}: {
+  item: Doc<"checklistItems">;
+  isDragging: boolean;
+  onToggle: () => void;
+  onRemove: () => void;
+  onNavigate: () => void;
+  onLinkPicker: () => void;
+  onCreateAndLink: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: item._id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`checklist-row${isDragging ? " is-dragging" : ""}`}
+      {...attributes}
+    >
+      <button
+        type="button"
+        className="checklist-drag-handle"
+        aria-label="Reorder subtask"
+        {...listeners}
+      >
+        ⠿
+      </button>
+      <input type="checkbox" checked={item.done} onChange={onToggle} />
+      <span className={item.done ? "checklist-text is-done" : "checklist-text"}>{item.text}</span>
+      <button className="checklist-del" onClick={onRemove}>
+        ✕
+      </button>
+      {item.linkedTodoId ? (
+        <button
+          className="checklist-linked-btn"
+          title="Open linked todo"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate();
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+          </svg>
+        </button>
+      ) : (
+        <div className="checklist-row-actions">
+          <button
+            className="checklist-link-existing"
+            title="Link to existing todo"
+            onClick={(e) => {
+              e.stopPropagation();
+              onLinkPicker();
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+          </button>
+          <button
+            className="checklist-create-todo"
+            title="Create todo from subtask"
+            onClick={() => void onCreateAndLink()}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <line x1="12" y1="8" x2="12" y2="16" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+            </svg>
+          </button>
         </div>
       )}
     </div>
