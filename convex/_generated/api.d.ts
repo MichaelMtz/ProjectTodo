@@ -13,7 +13,6 @@ import type * as attachments from "../attachments.js";
 import type * as auth from "../auth.js";
 import type * as checklist from "../checklist.js";
 import type * as comments from "../comments.js";
-import type * as migrations from "../migrations.js";
 import type * as phases from "../phases.js";
 import type * as todos from "../todos.js";
 import type * as users from "../users.js";
@@ -30,7 +29,6 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   checklist: typeof checklist;
   comments: typeof comments;
-  migrations: typeof migrations;
   phases: typeof phases;
   todos: typeof todos;
   users: typeof users;
